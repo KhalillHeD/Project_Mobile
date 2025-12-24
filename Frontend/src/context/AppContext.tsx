@@ -8,8 +8,11 @@ interface AppContextType {
   role: Role;
   setRole: (role: Role) => void;
   user: User | null;
-  setUser: (user: User) => void;
+  setUser: (user: User | null) => void;
+  token: string | null;
+  setToken: (token: string | null) => void;
   jobs: Job[];
+  setJobs: (jobs: Job[]) => void;
   addJob: (job: Job) => void;
   likedJobs: Job[];
   likeJob: (job: Job) => void;
@@ -20,32 +23,23 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [role, setRoleState] = useState<Role>(null);
+  const [role, setRole] = useState<Role>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [jobs, setJobs] = useState<Job[]>(dummyJobs);
+  const [token, setToken] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<Job[]>(dummyJobs); // later: load from API
   const [likedJobs, setLikedJobs] = useState<Job[]>([]);
   const [swipedJobIds, setSwipedJobIds] = useState<string[]>([]);
 
-  const setRole = (newRole: Role) => {
-    setRoleState(newRole);
-    // Auto-set appropriate dummy user
-    if (newRole === 'jobseeker') {
-      setUser(dummyJobseekerUser);
-    } else if (newRole === 'recruiter') {
-      setUser(dummyRecruiterUser);
-    }
-  };
-
   const addJob = (job: Job) => {
-    setJobs((prev) => [job, ...prev]);
+    setJobs(prev => [job, ...prev]);
   };
 
   const likeJob = (job: Job) => {
-    setLikedJobs((prev) => [...prev, job]);
+    setLikedJobs(prev => [...prev, job]);
   };
 
   const addSwipedJob = (jobId: string) => {
-    setSwipedJobIds((prev) => [...prev, jobId]);
+    setSwipedJobIds(prev => [...prev, jobId]);
   };
 
   return (
@@ -55,7 +49,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setRole,
         user,
         setUser,
+        token,
+        setToken,
         jobs,
+        setJobs,
         addJob,
         likedJobs,
         likeJob,

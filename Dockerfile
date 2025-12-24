@@ -1,22 +1,21 @@
-# Dockerfile
 FROM python:3.11-slim
 
-# Set working directory
+# Copy backend code into /app/backend
 WORKDIR /app
 
-# Prevent .pyc and output buffering
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install dependencies
+# Install Python deps (requirements.txt is at project root)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all project files
-COPY . .
+# Copy only backend folder into image
+COPY backend/ /app/backend
 
-# Expose Django port
+# Set working dir to backend
+WORKDIR /app/backend
+
 EXPOSE 8000
 
-# Run server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

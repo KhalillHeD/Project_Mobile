@@ -1,6 +1,5 @@
-import React from 'react';
-import { AppNavigator } from '@/src/navigation/AppNavigator';
+import RoleSelectionScreen from "../src/screens/RoleSelectionScreen";
 
 export default function Index() {
-  return <AppNavigator />;
+  return <RoleSelectionScreen />;
 }

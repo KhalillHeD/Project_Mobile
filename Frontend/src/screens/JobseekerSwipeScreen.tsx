@@ -22,6 +22,7 @@ export const JobseekerSwipeScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const position = useRef(new Animated.ValueXY()).current;
+
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
     outputRange: ['-10deg', '0deg', '10deg'],
@@ -40,8 +41,10 @@ export const JobseekerSwipeScreen = () => {
     extrapolate: 'clamp',
   });
 
+  const availableJobs = jobs.filter((job) => !swipedJobIds.includes(job.id));
+  const currentJob = availableJobs[currentIndex];
+
   const handleSwipeComplete = (direction: 'left' | 'right') => {
-    const currentJob = availableJobs[currentIndex];
     if (currentJob) {
       addSwipedJob(currentJob.id);
       if (direction === 'right') {
@@ -87,9 +90,6 @@ export const JobseekerSwipeScreen = () => {
     }).start(() => handleSwipeComplete(direction));
   };
 
-  const availableJobs = jobs.filter((job) => !swipedJobIds.includes(job.id));
-  const currentJob = availableJobs[currentIndex];
-
   if (!currentJob) {
     return (
       <SafeAreaView style={styles.container}>
@@ -104,11 +104,7 @@ export const JobseekerSwipeScreen = () => {
   }
 
   const cardStyle = {
-    transform: [
-      { translateX: position.x },
-      { translateY: position.y },
-      { rotate },
-    ],
+    transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
   };
 
   return (
@@ -116,7 +112,7 @@ export const JobseekerSwipeScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Discover Jobs</Text>
         <Text style={styles.subtitle}>
-          {availableJobs.length} opportunities available
+          {availableJobs.length - currentIndex} opportunities available
         </Text>
       </View>
 
@@ -133,12 +129,6 @@ export const JobseekerSwipeScreen = () => {
           </Animated.View>
           <JobCard job={currentJob} />
         </Animated.View>
-
-        {availableJobs[currentIndex + 1] && (
-          <View style={[styles.card, styles.nextCard]}>
-            <JobCard job={availableJobs[currentIndex + 1]} />
-          </View>
-        )}
       </View>
 
       <View style={styles.buttonContainer}>
@@ -186,13 +176,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    position: 'absolute',
+    // Remove absolute positioning to avoid layering multiple cards
     width: SCREEN_WIDTH - 40,
   },
-  nextCard: {
-    opacity: 0.5,
-    transform: [{ scale: 0.95 }],
-  },
+  // remove nextCard style if unused
   likeLabel: {
     position: 'absolute',
     top: 50,

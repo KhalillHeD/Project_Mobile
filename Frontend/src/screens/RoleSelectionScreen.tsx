@@ -1,15 +1,30 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { Briefcase, UserCircle } from 'lucide-react-native';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { useAppContext } from '../context/AppContext';
 
-export const RoleSelectionScreen = ({ navigation }: any) => {
+import React from "react";
+import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { Briefcase, UserCircle } from "lucide-react-native";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { useAppContext } from "../context/AppContext";
+import { useRouter } from "expo-router";
+
+const RoleSelectionScreen = () => {
   const { setRole } = useAppContext();
+  const router = useRouter();
 
-  const handleRoleSelection = (selectedRole: 'recruiter' | 'jobseeker') => {
+  // login for selected role
+  const handleRoleSelection = (selectedRole: "recruiter" | "jobseeker") => {
     setRole(selectedRole);
-    navigation.navigate('Login');
+    router.push("/login");
+  };
+
+  // signup for selected role (use these if you add signup buttons)
+  const goToRecruiterSignup = () => {
+    setRole("recruiter");
+    router.push("/signup");
+  };
+
+  const goToJobseekerSignup = () => {
+    setRole("jobseeker");
+    router.push("/signup");
   };
 
   return (
@@ -21,7 +36,7 @@ export const RoleSelectionScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.buttonContainer}>
-          <View style={styles.roleCard}>
+          <View className="role-card" style={styles.roleCard}>
             <View style={styles.iconContainer}>
               <Briefcase size={48} color="#007AFF" strokeWidth={2} />
             </View>
@@ -31,9 +46,16 @@ export const RoleSelectionScreen = ({ navigation }: any) => {
             </Text>
             <PrimaryButton
               title="Continue as Recruiter"
-              onPress={() => handleRoleSelection('recruiter')}
+              onPress={() => handleRoleSelection("recruiter")}
               style={styles.button}
             />
+            {/* Example extra signup button:
+            <PrimaryButton
+              title="Sign up as Recruiter"
+              onPress={goToRecruiterSignup}
+              style={styles.button}
+              variant="outline"
+            /> */}
           </View>
 
           <View style={styles.roleCard}>
@@ -46,10 +68,17 @@ export const RoleSelectionScreen = ({ navigation }: any) => {
             </Text>
             <PrimaryButton
               title="Continue as Jobseeker"
-              onPress={() => handleRoleSelection('jobseeker')}
+              onPress={() => handleRoleSelection("jobseeker")}
               style={styles.button}
               variant="secondary"
             />
+            {/* Example extra signup button:
+            <PrimaryButton
+              title="Sign up as Jobseeker"
+              onPress={goToJobseekerSignup}
+              style={styles.button}
+              variant="outline"
+            /> */}
           </View>
         </View>
       </View>
@@ -57,40 +86,42 @@ export const RoleSelectionScreen = ({ navigation }: any) => {
   );
 };
 
+export default RoleSelectionScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 60,
   },
   appName: {
     fontSize: 42,
-    fontWeight: '800',
-    color: '#1A1A1A',
+    fontWeight: "800",
+    color: "#1A1A1A",
     marginBottom: 8,
   },
   tagline: {
     fontSize: 18,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   buttonContainer: {
     gap: 24,
   },
   roleCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 28,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -101,17 +132,17 @@ const styles = StyleSheet.create({
   },
   roleTitle: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontWeight: "700",
+    color: "#1A1A1A",
     marginBottom: 8,
   },
   roleDescription: {
     fontSize: 15,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginBottom: 20,
   },
   button: {
-    width: '100%',
+    width: "100%",
   },
 });
