@@ -21,6 +21,26 @@ import { Shadow } from "../theme/shadow";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
+const withImage = (job: any) => {
+  if (!job) return job;
+
+  // keep existing image if already present
+  if (job.image) return job;
+
+  const fallback =
+    job.companyLogo ||
+    job.imageUrl ||
+    job.logo ||
+    (Array.isArray(job.images) ? job.images[0] : undefined) ||
+    (Array.isArray(job.photos) ? job.photos[0] : undefined);
+
+  // do NOT mutate original object
+  return fallback ? { ...job, image: fallback } : job;
+};
+
+
+
+
 export const JobseekerSwipeScreen = () => {
   const { jobs, likeJob, swipedJobIds, addSwipedJob } = useAppContext();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -180,7 +200,8 @@ export const JobseekerSwipeScreen = () => {
               },
             ]}
           >
-            <JobCard job={nextJob} />
+            <JobCard job={withImage(nextJob)} />
+
           </Animated.View>
         )}
 
@@ -214,7 +235,8 @@ export const JobseekerSwipeScreen = () => {
           </Animated.View>
 
           {/* Parallax-enabled card */}
-          <JobCard job={currentJob} parallaxX={parallaxX} />
+          <JobCard job={withImage(currentJob)} parallaxX={parallaxX} />
+            
         </Animated.View>
       </View>
 
@@ -241,7 +263,7 @@ export const JobseekerSwipeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
 
   header: {
     paddingHorizontal: Spacing.xl,

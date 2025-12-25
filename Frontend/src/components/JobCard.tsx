@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Animated, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../theme/colors";
 import { Radius } from "../theme/radius";
@@ -12,31 +12,90 @@ type Props = {
     location: string;
     salary?: string;
     description?: string;
+
+    // image can be require(...) (number) or URL string or { uri }
     image?: ImageSourcePropType | any;
+
+    // optional (if your data has these)
+    companyLogo?: string;
+    imageUrl?: string;
+    images?: string[];
+    photos?: string[];
   };
-  // optional parallax (provided by swipe screen)
   parallaxX?: any;
 };
 
+function pickFirstString(...vals: any[]) {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return "";
+}
+
+function toImageSource(v: any): ImageSourcePropType | undefined {
+  if (!v) return undefined;
+
+  // require('...') returns a number
+  if (typeof v === "number") return v;
+
+  // already { uri: "..." }
+  if (typeof v === "object" && typeof v.uri === "string") return v;
+
+  // raw string url
+  if (typeof v === "string") return { uri: v };
+
+  return undefined;
+}
+
 export default function JobCard({ job, parallaxX }: Props) {
   const translateX = parallaxX ?? 0;
+  const [failed, setFailed] = useState(false);
+
+  const fallback = useMemo(() => require("../../assets/images/icon.png"), []);
+
+  // Prefer known URL fields if present
+  const urlCandidate = useMemo(() => {
+    return pickFirstString(
+      job?.imageUrl,
+      job?.companyLogo,
+      typeof job?.image === "string" ? job.image : "",
+      Array.isArray(job?.images) ? job.images[0] : "",
+      Array.isArray(job?.photos) ? job.photos[0] : ""
+    );
+  }, [job]);
+
+  const resolved = useMemo<ImageSourcePropType>(() => {
+    return (
+      toImageSource(urlCandidate) ??
+      toImageSource(job?.image) ??
+      fallback
+    );
+  }, [urlCandidate, job, fallback]);
+
+  const sourceToUse = failed ? fallback : resolved;
 
   return (
     <View style={styles.card}>
-      {/* Hero image */}
       <View style={styles.header}>
         <Animated.Image
-          source={job.image ?? require("../../assets/images/icon.png")}
-          style={[styles.image, { transform: [{ translateX }, { scale: 1.06 }] }]}
+          source={sourceToUse}
+          style={[styles.image, { transform: [{ translateX }] }]}
           resizeMode="cover"
+          resizeMethod="resize"
+          fadeDuration={150}
+          progressiveRenderingEnabled
+          onError={(e) => {
+            console.log("JobCard image failed:", { urlCandidate, raw: job?.image, native: e?.nativeEvent });
+            setFailed(true);
+          }}
         />
 
-        {/* Better readability */}
+        {/* Softer overlays (less muddy) */}
         <View style={styles.overlayTop} />
         <View style={styles.overlayBottom} />
+        <View style={styles.highlight} />
       </View>
 
-      {/* Content */}
       <View style={styles.body}>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
@@ -73,21 +132,21 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 230,
+    height: 260, // slightly taller = less stretching/grainy feel
     position: "relative",
     backgroundColor: "#0F1220",
     overflow: "hidden",
   },
+
   image: {
-    width: "110%",
-    height: "110%",
-    marginLeft: "-5%",
-    marginTop: "-5%",
+    width: "100%",
+    height: "100%",
   },
 
+  // Reduce darkness so image stays crisp
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.16)",
+    backgroundColor: "rgba(0,0,0,0.10)",
   },
   overlayBottom: {
     position: "absolute",
@@ -95,7 +154,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 120,
-    backgroundColor: "rgba(0,0,0,0.30)",
+    backgroundColor: "rgba(0,0,0,0.22)",
+  },
+  // subtle top highlight makes image look cleaner
+  highlight: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 80,
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
 
   body: {

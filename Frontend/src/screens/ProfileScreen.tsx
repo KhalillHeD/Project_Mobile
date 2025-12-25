@@ -59,10 +59,7 @@ export const ProfileScreen = () => {
           {/* Hero Card */}
           <View style={styles.hero}>
             <View style={styles.avatarRing}>
-              <Image
-                source={{ uri: user.avatar }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: user.avatar }} style={styles.avatar} />
             </View>
 
             <Text style={styles.name}>{user.name}</Text>
@@ -70,8 +67,11 @@ export const ProfileScreen = () => {
 
             <View style={styles.pills}>
               <View style={styles.pill}>
-                <Text style={styles.pillText}>{role === "jobseeker" ? "Jobseeker" : "Recruiter"}</Text>
+                <Text style={styles.pillText}>
+                  {role === "jobseeker" ? "Jobseeker" : "Recruiter"}
+                </Text>
               </View>
+
               {role === "jobseeker" && (
                 <View style={[styles.pill, styles.pillAccent]}>
                   <Text style={[styles.pillText, styles.pillAccentText]}>
@@ -90,9 +90,7 @@ export const ProfileScreen = () => {
                 <Divider />
                 <InfoRow
                   label="Experience"
-                  value={
-                    user.yearsOfExperience ? `${user.yearsOfExperience} years` : "Not specified"
-                  }
+                  value={user.yearsOfExperience ? `${user.yearsOfExperience} years` : "Not specified"}
                 />
                 <Divider />
                 <InfoRow label="Bio" value={user.bio || "Not specified"} />
@@ -109,95 +107,103 @@ export const ProfileScreen = () => {
 
         {/* Edit Modal */}
         <Modal visible={isEditing} animationType="slide" presentationStyle="pageSheet">
-          <SafeAreaView style={styles.modalSafe}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={handleCancelEdit} style={styles.modalIconBtn}>
-                <X size={22} color={Colors.text} strokeWidth={2.2} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <View style={{ width: 36 }} />
-            </View>
+          <AuroraBackground>
+            <SafeAreaView style={styles.modalSafe}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={handleCancelEdit} style={styles.modalIconBtn}>
+                  <X size={22} color="#FFFFFF" strokeWidth={2.2} />
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Edit Profile</Text>
+                <View style={{ width: 36 }} />
+              </View>
 
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              style={{ flex: 1 }}
-            >
-              <ScrollView
-                contentContainerStyle={styles.modalContent}
-                showsVerticalScrollIndicator={false}
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
               >
-                <TextInputField
-                  label="Name"
-                  value={editedUser?.name || ""}
-                  onChangeText={(text) =>
-                    setEditedUser((prev) => (prev ? { ...prev, name: text } : prev))
-                  }
-                />
-
-                <TextInputField
-                  label="Email"
-                  value={editedUser?.email || ""}
-                  onChangeText={(text) =>
-                    setEditedUser((prev) => (prev ? { ...prev, email: text } : prev))
-                  }
-                  keyboardType="email-address"
-                />
-
-                {role === "jobseeker" ? (
-                  <>
+                <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+                  <View style={styles.modalCard}>
                     <TextInputField
-                      label="Skills"
-                      value={editedUser?.skills || ""}
+                      label="Name"
+                      value={editedUser?.name || ""}
                       onChangeText={(text) =>
-                        setEditedUser((prev) => (prev ? { ...prev, skills: text } : prev))
+                        setEditedUser((prev) => (prev ? { ...prev, name: text } : prev))
                       }
-                      placeholder="e.g. React Native, TypeScript, Node.js"
+                      placeholder="Your full name"
                     />
 
                     <TextInputField
-                      label="Years of Experience"
-                      value={editedUser?.yearsOfExperience?.toString() || ""}
+                      label="Email"
+                      value={editedUser?.email || ""}
                       onChangeText={(text) =>
-                        setEditedUser((prev) =>
-                          prev ? { ...prev, yearsOfExperience: parseInt(text) || 0 } : prev
-                        )
+                        setEditedUser((prev) => (prev ? { ...prev, email: text } : prev))
                       }
-                      keyboardType="numeric"
+                      keyboardType="email-address"
+                      placeholder="you@example.com"
                     />
 
-                    <TextInputField
-                      label="Bio"
-                      value={editedUser?.bio || ""}
-                      onChangeText={(text) =>
-                        setEditedUser((prev) => (prev ? { ...prev, bio: text } : prev))
-                      }
-                      style={styles.textArea}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <TextInputField
-                      label="Company"
-                      value={editedUser?.company || ""}
-                      onChangeText={(text) =>
-                        setEditedUser((prev) => (prev ? { ...prev, company: text } : prev))
-                      }
-                    />
+                    {role === "jobseeker" ? (
+                      <>
+                        <TextInputField
+                          label="Skills"
+                          value={editedUser?.skills || ""}
+                          onChangeText={(text) =>
+                            setEditedUser((prev) => (prev ? { ...prev, skills: text } : prev))
+                          }
+                          placeholder="e.g. React Native, TypeScript, Node.js"
+                        />
 
-                    <TextInputField
-                      label="Role"
-                      value={editedUser?.role || ""}
-                      onChangeText={(text) =>
-                        setEditedUser((prev) => (prev ? { ...prev, role: text } : prev))
-                      }
-                    />
-                  </>
-                )}
+                        <TextInputField
+                          label="Years of Experience"
+                          value={editedUser?.yearsOfExperience?.toString() || ""}
+                          onChangeText={(text) =>
+                            setEditedUser((prev) =>
+                              prev ? { ...prev, yearsOfExperience: parseInt(text) || 0 } : prev
+                            )
+                          }
+                          keyboardType="numeric"
+                          placeholder="e.g. 3"
+                        />
 
-                <PrimaryButton title="Save Changes" onPress={handleSaveProfile} />
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </SafeAreaView>
+                        <TextInputField
+                          label="Bio"
+                          value={editedUser?.bio || ""}
+                          onChangeText={(text) =>
+                            setEditedUser((prev) => (prev ? { ...prev, bio: text } : prev))
+                          }
+                          placeholder="Tell recruiters what you’re great at, what you want, and what you’re looking for."
+                          multiline
+                          style={styles.textArea}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <TextInputField
+                          label="Company"
+                          value={editedUser?.company || ""}
+                          onChangeText={(text) =>
+                            setEditedUser((prev) => (prev ? { ...prev, company: text } : prev))
+                          }
+                          placeholder="e.g. Acme Corp"
+                        />
+
+                        <TextInputField
+                          label="Role"
+                          value={editedUser?.role || ""}
+                          onChangeText={(text) =>
+                            setEditedUser((prev) => (prev ? { ...prev, role: text } : prev))
+                          }
+                          placeholder="e.g. Talent Acquisition"
+                        />
+                      </>
+                    )}
+
+                    <PrimaryButton title="Save Changes" onPress={handleSaveProfile} />
+                  </View>
+                </ScrollView>
+              </KeyboardAvoidingView>
+            </SafeAreaView>
+          </AuroraBackground>
         </Modal>
       </SafeAreaView>
     </AuroraBackground>
@@ -328,7 +334,7 @@ const styles = StyleSheet.create({
   /* Modal */
   modalSafe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "transparent",
   },
   modalHeader: {
     flexDirection: "row",
@@ -337,8 +343,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderBottomColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(15,18,32,0.55)",
   },
   modalIconBtn: {
     width: 36,
@@ -346,17 +352,29 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: "900",
-    color: Colors.text,
+    color: "#fff",
   },
   modalContent: {
     padding: Spacing.xl,
+    paddingBottom: Spacing.xl,
+  },
+  modalCard: {
+    backgroundColor: "rgba(28,31,46,0.90)",
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
     gap: Spacing.lg,
+    ...Shadow,
   },
   textArea: {
-    height: 110,
+    height: 140,
   },
 });

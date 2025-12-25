@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -7,14 +7,14 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
 } from "react-native";
 import { ChevronRight } from "lucide-react-native";
-import { useAppContext } from "../context/AppContext";
-import { Job } from "../data/jobs";
-import { fetchMatches } from "../api/matches";
 import { useRouter } from "expo-router";
 
+import { useAppContext } from "../context/AppContext";
+import { Job } from "../data/jobs";
+
+import AuroraBackground from "../components/AuroraBackground";
 import { Colors } from "../theme/colors";
 import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
@@ -22,42 +22,9 @@ import { Shadow } from "../theme/shadow";
 
 const MatchesScreen = () => {
   const router = useRouter();
-  const { token } = useAppContext();
 
-  const [matches, setMatches] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadMatches = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setError(null);
-        const data = await fetchMatches(token);
-
-        const mapped: Job[] = data.map((m: any) => ({
-          id: String(m.job),
-          title: m.job_title,
-          company: m.company_name,
-          description: "",
-          location: "",
-          salaryRange: "",
-          companyLogo: "https://via.placeholder.com/120",
-        }));
-
-        setMatches(mapped);
-      } catch {
-        setError("Failed to load matches.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMatches();
-  }, [token]);
+  // ✅ this is what swipe is filling
+  const { likedJobs } = useAppContext();
 
   const handleJobPress = (job: Job) => {
     router.push({
@@ -77,64 +44,43 @@ const MatchesScreen = () => {
       <View style={styles.info}>
         <Text style={styles.jobTitle}>{item.title}</Text>
         <Text style={styles.company}>{item.company}</Text>
-        <Text style={styles.hint}>You matched with this job</Text>
+        <Text style={styles.hint}>You liked this job</Text>
       </View>
 
-      <ChevronRight size={22} color={Colors.textMuted} strokeWidth={2.2} />
+      <ChevronRight size={22} color={"rgba(255,255,255,0.55)"} strokeWidth={2.2} />
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Matches" />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Matches" />
-        <View style={styles.center}>
-          <Text style={styles.error}>{error}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!token || matches.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Matches" />
-        <View style={styles.center}>
-          <Text style={styles.emptyTitle}>No matches yet</Text>
-          <Text style={styles.emptyText}>
-            Swipe right on jobs you like to start conversations.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <Header
-        title="Matches"
-        subtitle={`${matches.length} job${matches.length > 1 ? "s" : ""}`}
-      />
+    <AuroraBackground>
+      <SafeAreaView style={styles.container}>
+        <Header
+          title="Matches"
+          subtitle={
+            likedJobs.length > 0
+              ? `${likedJobs.length} job${likedJobs.length > 1 ? "s" : ""} liked`
+              : undefined
+          }
+        />
 
-      <FlatList
-        data={matches}
-        renderItem={renderJobItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
-    </SafeAreaView>
+        {likedJobs.length === 0 ? (
+          <View style={styles.center}>
+            <Text style={styles.emptyTitle}>No matches yet</Text>
+            <Text style={styles.emptyText}>
+              Swipe right on jobs you like to start conversations.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={likedJobs}
+            renderItem={renderJobItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </SafeAreaView>
+    </AuroraBackground>
   );
 };
 
@@ -150,9 +96,10 @@ const Header = ({ title, subtitle }: { title: string; subtitle?: string }) => (
 
 /* ---------- Styles ---------- */
 const styles = StyleSheet.create({
+  // ✅ transparent so Aurora shows (no white)
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "transparent",
   },
 
   header: {
@@ -163,14 +110,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 34,
     fontWeight: "900",
-    color: Colors.text,
+    color: "#fff",
     letterSpacing: -0.6,
   },
   headerSubtitle: {
     marginTop: 4,
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.textMuted,
+    color: "rgba(255,255,255,0.75)",
   },
 
   list: {
@@ -181,8 +128,10 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: "rgba(15,18,32,0.78)",
     borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
     padding: Spacing.lg,
     marginBottom: Spacing.md,
     ...Shadow,
@@ -193,7 +142,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: Radius.md,
     marginRight: Spacing.md,
-    backgroundColor: Colors.backgroundMuted,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 
   info: {
@@ -202,19 +151,19 @@ const styles = StyleSheet.create({
   jobTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: Colors.text,
+    color: "#fff",
     marginBottom: 4,
   },
   company: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "800",
     color: Colors.primary,
     marginBottom: 6,
   },
   hint: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.textMuted,
+    color: "rgba(255,255,255,0.7)",
   },
 
   center: {
@@ -226,19 +175,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 26,
     fontWeight: "900",
-    color: Colors.text,
+    color: "#fff",
     marginBottom: 10,
   },
   emptyText: {
     fontSize: 15,
     fontWeight: "600",
-    color: Colors.textMuted,
+    color: "rgba(255,255,255,0.75)",
     textAlign: "center",
     lineHeight: 22,
-  },
-  error: {
-    color: Colors.danger,
-    fontSize: 14,
-    fontWeight: "700",
   },
 });
