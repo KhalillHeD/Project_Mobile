@@ -1,80 +1,149 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
-import { Job } from '../data/jobs';
+import React from "react";
+import { Animated, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
+import { Colors } from "../theme/colors";
+import { Radius } from "../theme/radius";
+import { Shadow } from "../theme/shadow";
+import { Spacing } from "../theme/spacing";
 
-interface JobCardProps {
-  job: Job;
-}
+type Props = {
+  job: {
+    title: string;
+    company: string;
+    location: string;
+    salary?: string;
+    description?: string;
+    image?: ImageSourcePropType | any;
+  };
+  // optional parallax (provided by swipe screen)
+  parallaxX?: any;
+};
 
-export const JobCard = ({ job }: JobCardProps) => {
+export default function JobCard({ job, parallaxX }: Props) {
+  const translateX = parallaxX ?? 0;
+
   return (
     <View style={styles.card}>
-      <Image source={{ uri: job.companyLogo }} style={styles.logo} />
-      <View style={styles.content}>
-        <Text style={styles.title}>{job.title}</Text>
-        <Text style={styles.company}>{job.company}</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.location}>{job.location}</Text>
-          <Text style={styles.salary}>{job.salary}</Text>
+      {/* Hero image */}
+      <View style={styles.header}>
+        <Animated.Image
+          source={job.image ?? require("../../assets/images/icon.png")}
+          style={[styles.image, { transform: [{ translateX }, { scale: 1.06 }] }]}
+          resizeMode="cover"
+        />
+
+        {/* Better readability */}
+        <View style={styles.overlayTop} />
+        <View style={styles.overlayBottom} />
+      </View>
+
+      {/* Content */}
+      <View style={styles.body}>
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{job.title}</Text>
+            <Text style={styles.company}>{job.company}</Text>
+            <Text style={styles.meta}>{job.location}</Text>
+          </View>
+
+          {!!job.salary && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{job.salary}</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.description} numberOfLines={3}>
-          {job.description}
-        </Text>
+
+        {!!job.description && (
+          <Text numberOfLines={3} style={styles.desc}>
+            {job.description}
+          </Text>
+        )}
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: "#1C1F2E",
+    borderRadius: Radius.xl,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    ...Shadow,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    marginBottom: 16,
-    alignSelf: 'center',
+
+  header: {
+    height: 230,
+    position: "relative",
+    backgroundColor: "#0F1220",
+    overflow: "hidden",
   },
-  content: {
-    gap: 8,
+  image: {
+    width: "110%",
+    height: "110%",
+    marginLeft: "-5%",
+    marginTop: "-5%",
+  },
+
+  overlayTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.16)",
+  },
+  overlayBottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 120,
+    backgroundColor: "rgba(0,0,0,0.30)",
+  },
+
+  body: {
+    padding: Spacing.xl,
+    gap: 14,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    marginBottom: 4,
+    letterSpacing: -0.3,
   },
   company: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  location: {
-    fontSize: 14,
-    color: '#666',
-  },
-  salary: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#34C759',
+    fontWeight: "700",
+    color: Colors.primary,
   },
-  description: {
-    fontSize: 15,
-    color: '#555',
-    lineHeight: 22,
-    marginTop: 8,
+  meta: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.65)",
+    marginTop: 6,
+  },
+
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  desc: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -6,128 +6,158 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-} from 'react-native';
-import { ArrowLeft, Send } from 'lucide-react-native';
+} from "react-native";
+import { ArrowLeft, Send } from "lucide-react-native";
+
+import { Colors } from "../theme/colors";
+import { Spacing } from "../theme/spacing";
+import { Radius } from "../theme/radius";
+import { Shadow } from "../theme/shadow";
 
 export const ChatScreen = ({ navigation, route }: any) => {
   const { job } = route.params;
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={styles.back}
+          activeOpacity={0.7}
         >
-          <ArrowLeft size={24} color="#007AFF" strokeWidth={2} />
+          <ArrowLeft size={22} color={Colors.text} strokeWidth={2.4} />
         </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>{job.title}</Text>
-          <Text style={styles.headerSubtitle}>{job.company}</Text>
-        </View>
-      </View>
 
-      <View style={styles.chatArea}>
-        <View style={styles.placeholderContainer}>
-          <Text style={styles.placeholderTitle}>Chat Coming Soon</Text>
-          <Text style={styles.placeholderText}>
-            Connect with recruiters and discuss job opportunities.
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {job.title}
+          </Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {job.company}
           </Text>
         </View>
       </View>
 
-      <View style={styles.inputContainer}>
+      {/* Chat canvas */}
+      <View style={styles.chatArea}>
+        <View style={styles.placeholder}>
+          <Text style={styles.placeholderTitle}>Chat coming soon</Text>
+          <Text style={styles.placeholderText}>
+            Once messaging is enabled, you’ll be able to chat directly with the recruiter here.
+          </Text>
+        </View>
+      </View>
+
+      {/* Input */}
+      <View style={styles.inputWrap}>
         <TextInput
           style={styles.input}
-          placeholder="Type a message..."
-          placeholderTextColor="#999"
+          placeholder="Type a message…"
+          placeholderTextColor={Colors.textMuted}
           editable={false}
         />
-        <TouchableOpacity style={styles.sendButton} disabled>
-          <Send size={20} color="#999" strokeWidth={2} />
+        <TouchableOpacity style={styles.sendBtn} disabled>
+          <Send size={20} color={Colors.textMuted} strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
   },
+
+  /* Header */
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: Colors.border,
   },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
+  back: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.sm,
   },
   headerInfo: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 17,
+    fontWeight: "800",
+    color: Colors.text,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textMuted,
     marginTop: 2,
   },
+
+  /* Chat */
   chatArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
+    padding: Spacing.xl,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  placeholderContainer: {
-    alignItems: 'center',
+  placeholder: {
+    alignItems: "center",
+    maxWidth: 300,
   },
   placeholderTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: "900",
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+    textAlign: "center",
   },
   placeholderText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.textMuted,
+    textAlign: "center",
+    lineHeight: 22,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+
+  /* Input */
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: Colors.border,
   },
   input: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 24,
-    paddingHorizontal: 20,
+    backgroundColor: Colors.backgroundMuted,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: 12,
-    fontSize: 16,
-    color: '#333',
-    marginRight: 12,
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.text,
+    marginRight: Spacing.sm,
   },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.backgroundMuted,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

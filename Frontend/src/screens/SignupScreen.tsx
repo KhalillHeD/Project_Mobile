@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,195 +10,300 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { PrimaryButton } from "../components/PrimaryButton";
-import { TextInputField } from "../components/TextInputField";
-import { useAppContext } from "../context/AppContext";
-import { registerUser } from "../api/auth";
 import { useRouter } from "expo-router";
 
-export const SignupScreen = () => {
-  const { role } = useAppContext();
-  const router = useRouter();
+import  AuroraBackground  from "../components/AuroraBackground";
+import PrimaryButton from "../components/PrimaryButton";
+import TextInputField from "../components/TextInputField";
 
-  const [name, setName] = useState("");
+import { useAppContext } from "../context/AppContext";
+import { registerUser, loginUser, fetchMe } from "../api/auth";
+
+import { Spacing } from "../theme/spacing";
+import { Radius } from "../theme/radius";
+import { Colors } from "../theme/colors";
+console.log("AuroraBackground:", AuroraBackground);
+console.log("PrimaryButton:", PrimaryButton);
+console.log("TextInputField:", TextInputField);
+
+
+const SignupScreen = () => {
+  const router = useRouter();
+  const { role: intendedRole, setRole, setUser, setToken } = useAppContext();
+
+  // Core fields
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // extra fields per role
-  const [skills, setSkills] = useState("");
-  const [experienceYears, setExperienceYears] = useState("");
-  const [bio, setBio] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [positionTitle, setPositionTitle] = useState("");
+  // Recruiter extras (keep if your backend expects them; if not, they are harmless)
+  const [company, setCompany] = useState("");
+  const [position, setPosition] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSignup = async () => {
-    if (!role) {
-      setError("Please choose Jobseeker or Recruiter first.");
-      return;
-    }
+  const title = useMemo(
+    () => (intendedRole === "recruiter" ? "Recruiter Signup" : "Jobseeker Signup"),
+    [intendedRole]
+  );
 
+  const handleSignup = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const payload = {
-        username: name.trim() || email.trim(),
+      // 1) create account
+      await registerUser({
+        username: username.trim(),
         email: email.trim(),
         password,
-        role,
+      
+        role: intendedRole || "jobseeker",
+      });
 
-        // extra profile fields
-        skills,
-        experience_years: experienceYears ? Number(experienceYears) : null,
-        bio,
-        company_name: companyName,
-        position_title: positionTitle,
-      };
+      // 2) login
+      const login = await loginUser({ username: username.trim(), password });
+      const accessToken = login?.access as string;
 
-      console.log("Signup payload:", payload);
+      if (!accessToken) {
+        setError("Signup succeeded but login failed. Please try logging in.");
+        return;
+      }
 
-      await registerUser(payload);
+      setToken(accessToken);
 
-      // ✅ after signup, go to login (keep same role in context)
-      router.replace("/login");
+      // 3) fetch profile
+      const me = await fetchMe(accessToken);
+      const backendRole = me?.role;
+
+      if (!backendRole) {
+        setError("Signup/login worked but role missing from profile.");
+        return;
+      }
+
+      // enforce role selected
+      if (intendedRole && backendRole !== intendedRole) {
+        setToken("");
+        setError(
+          `This account is a ${backendRole}, but you selected ${intendedRole}.`
+        );
+        return;
+      }
+
+      setRole(backendRole);
+
+      setUser({
+        id: String(me.id ?? me.username ?? ""),
+        name: me.username ?? "",
+        email: me.email ?? "",
+        role: backendRole,
+        avatar: me.avatar ?? "",
+        company: me.company ?? me.company_name ?? "",
+        bio: me.bio ?? "",
+        skills: me.skills ?? "",
+        yearsOfExperience: me.yearsOfExperience ?? me.years_of_experience ?? 0,
+      });
+
+      router.replace("/matches");
     } catch (e: any) {
       console.log("Signup error:", e);
-      const msg =
-        e?.data?.username?.[0] ||
-        e?.data?.email?.[0] ||
-        e?.data?.password?.[0] ||
-        e?.data?.role?.[0] ||
-        e?.data?.detail ||
-        "Signup failed. Please check your details.";
-      setError(msg);
+      setError(e?.data?.detail || "Signup failed. Please check your inputs.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = () => {
-    router.push("/login"); // requires app/login.tsx
-  };
-
-  const roleTitle = role === "recruiter" ? "Recruiter Signup" : "Jobseeker Signup";
-
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+    <AuroraBackground>
+      <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>{roleTitle}</Text>
-            <Text style={styles.subtitle}>Create your account to get started</Text>
-          </View>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Header (same tone as login) */}
+            <View style={styles.header}>
+              <Text style={styles.brand}>JobSwipe</Text>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.subtitle}>Create your account to get started</Text>
+            </View>
 
-          <View style={styles.form}>
-            {error && <Text style={{ color: "red", marginBottom: 8 }}>{error}</Text>}
+            {/* Solid dark card (NOT transparent) */}
+            <View style={styles.card}>
+              {error && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
 
-            <TextInputField
-              label="Full Name"
-              value={name}
-              onChangeText={setName}
-              placeholder="John Doe"
-            />
-
-            <TextInputField
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="your.email@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <TextInputField
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Create a strong password"
-              secureTextEntry
-            />
-
-            {role === "jobseeker" && (
-              <>
+              <View style={styles.form}>
                 <TextInputField
-                  label="Skills"
-                  value={skills}
-                  onChangeText={setSkills}
-                  placeholder="React, Node, SQL"
+                  label="Username"
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="your_username"
                 />
-                <TextInputField
-                  label="Years of experience"
-                  value={experienceYears}
-                  onChangeText={setExperienceYears}
-                  keyboardType="numeric"
-                  placeholder="3"
-                />
-                <TextInputField
-                  label="Short Bio"
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="Tell recruiters about you"
-                />
-              </>
-            )}
 
-            {role === "recruiter" && (
-              <>
                 <TextInputField
-                  label="Company Name"
-                  value={companyName}
-                  onChangeText={setCompanyName}
-                  placeholder="Acme Corp"
+                  label="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="your.email@example.com"
+                  keyboardType="email-address"
                 />
+
                 <TextInputField
-                  label="Position"
-                  value={positionTitle}
-                  onChangeText={setPositionTitle}
-                  placeholder="Talent Acquisition"
+                  label="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Create a strong password"
+                  secureTextEntry
                 />
-              </>
-            )}
 
-            <PrimaryButton
-              title={loading ? "Signing up..." : "Sign up"}
-              onPress={handleSignup}
-              style={styles.signupButton}
-              disabled={loading}
-            />
+                {intendedRole === "recruiter" && (
+                  <>
+                    <TextInputField
+                      label="Company Name"
+                      value={company}
+                      onChangeText={setCompany}
+                      placeholder="Acme Corp"
+                    />
+                    <TextInputField
+                      label="Position"
+                      value={position}
+                      onChangeText={setPosition}
+                      placeholder="Talent Acquisition"
+                    />
+                  </>
+                )}
 
-            {loading && <ActivityIndicator style={{ marginTop: 8 }} color="#007AFF" />}
+                <PrimaryButton
+                  title={loading ? "Creating account..." : "Sign up"}
+                  onPress={handleSignup}
+                  disabled={loading}
+                  variant="solid"
+                />
 
-            <TouchableOpacity onPress={handleLogin} style={styles.loginPrompt}>
-              <Text style={styles.loginText}>
-                Already have an account? <Text style={styles.loginLink}>Log in</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+                {loading && (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator color={Colors.primary} />
+                    <Text style={styles.loadingText}>Setting things up…</Text>
+                  </View>
+                )}
+
+                {/* Divider */}
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <PrimaryButton
+                  title="Continue with Google"
+                  onPress={() => {}}
+                  variant="outline"
+                />
+
+                <TouchableOpacity
+                  onPress={() => router.push("/login")}
+                  style={styles.bottomLink}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.bottomText}>
+                    Already have an account?{" "}
+                    <Text style={styles.bottomTextStrong}>Log in</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={{ height: 28 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </AuroraBackground>
   );
 };
 
+export default SignupScreen;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  keyboardView: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40 },
-  header: { marginBottom: 40 },
-  title: { fontSize: 32, fontWeight: "800", color: "#1A1A1A", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#666" },
-  form: { flex: 1 },
-  signupButton: { marginTop: 8, marginBottom: 24 },
-  loginPrompt: { marginTop: 16, alignItems: "center" },
-  loginText: { fontSize: 15, color: "#666" },
-  loginLink: { color: "#007AFF", fontWeight: "600" },
+  safe: { flex: 1 },
+
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    justifyContent: "center",
+  },
+
+  header: { alignItems: "center", marginBottom: 22 },
+  brand: {
+    fontSize: 34,
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: -0.6,
+  },
+  title: {
+    marginTop: 10,
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.78)",
+    textAlign: "center",
+  },
+
+  // Key change: solid dark card
+  card: {
+    backgroundColor: "#1C1F2E",
+    borderRadius: Radius.xl,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+
+  form: { gap: 16 },
+
+  errorBox: {
+    backgroundColor: "rgba(254,242,242,0.95)",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+  errorText: { color: "#991B1B", fontSize: 13, fontWeight: "700", lineHeight: 18 },
+
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 6,
+  },
+  loadingText: { color: "rgba(255,255,255,0.78)", fontSize: 13, fontWeight: "600" },
+
+  divider: { flexDirection: "row", alignItems: "center", marginVertical: 6 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.14)" },
+  dividerText: {
+    marginHorizontal: 14,
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  bottomLink: { marginTop: 4, alignItems: "center" },
+  bottomText: { fontSize: 14, color: "rgba(255,255,255,0.75)", fontWeight: "600" },
+  bottomTextStrong: { color: "#fff", fontWeight: "900" },
 });

@@ -1,62 +1,76 @@
-import React from 'react';
+import React, { useState } from "react";
 import {
-  TextInput,
-  Text,
-  View,
   StyleSheet,
+  Text,
+  TextInput,
+  View,
+  ViewStyle,
   TextInputProps,
-} from 'react-native';
+} from "react-native";
+import { Colors } from "../theme/colors";
+import { Radius } from "../theme/radius";
+import { Spacing } from "../theme/spacing";
 
-interface TextInputFieldProps extends TextInputProps {
-  label: string;
-  error?: string;
-}
+type Props = {
+  label?: string;
+  style?: ViewStyle;
+} & TextInputProps;
 
-export const TextInputField = ({
+export default function TextInputField({
   label,
-  error,
-  ...textInputProps
-}: TextInputFieldProps) => {
+  style,
+  ...inputProps
+}: Props) {
+  const [focused, setFocused] = useState(false);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={[styles.wrap, style]}>
+      {!!label && <Text style={styles.label}>{label}</Text>}
+
       <TextInput
-        style={[styles.input, error && styles.inputError]}
-        placeholderTextColor="#999"
-        {...textInputProps}
+        {...inputProps}
+        style={[
+          styles.input,
+          focused && styles.inputFocused,
+        ]}
+        placeholderTextColor="rgba(255,255,255,0.45)"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
+  wrap: {
+    gap: 8,
   },
+
   label: {
+    color: "rgba(255,255,255,0.85)", // 🔥 readable on dark
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontWeight: "700",
   },
+
   input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#333',
+    height: 54,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+
+    backgroundColor: "#1F2438", // 🔥 dark surface
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "rgba(255,255,255,0.18)",
+
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
-  inputError: {
-    borderColor: '#FF3B30',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
+
+  inputFocused: {
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });

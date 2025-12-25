@@ -15,6 +15,11 @@ import { Job } from "../data/jobs";
 import { fetchMatches } from "../api/matches";
 import { useRouter } from "expo-router";
 
+import { Colors } from "../theme/colors";
+import { Spacing } from "../theme/spacing";
+import { Radius } from "../theme/radius";
+import { Shadow } from "../theme/shadow";
+
 const MatchesScreen = () => {
   const router = useRouter();
   const { token } = useAppContext();
@@ -44,7 +49,7 @@ const MatchesScreen = () => {
         }));
 
         setMatches(mapped);
-      } catch (e: any) {
+      } catch {
         setError("Failed to load matches.");
       } finally {
         setLoading(false);
@@ -55,8 +60,6 @@ const MatchesScreen = () => {
   }, [token]);
 
   const handleJobPress = (job: Job) => {
-    // Only do this if you have app/chat.tsx (or similar)
-    // Passing objects via params is usually done by serializing:
     router.push({
       pathname: "/chat",
       params: { job: JSON.stringify(job) },
@@ -65,30 +68,28 @@ const MatchesScreen = () => {
 
   const renderJobItem = ({ item }: { item: Job }) => (
     <TouchableOpacity
-      style={styles.jobItem}
+      style={styles.card}
       onPress={() => handleJobPress(item)}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
     >
       <Image source={{ uri: item.companyLogo }} style={styles.logo} />
-      <View style={styles.jobInfo}>
+
+      <View style={styles.info}>
         <Text style={styles.jobTitle}>{item.title}</Text>
         <Text style={styles.company}>{item.company}</Text>
-        <Text style={styles.description} numberOfLines={2}>
-          {item.description}
-        </Text>
+        <Text style={styles.hint}>You matched with this job</Text>
       </View>
-      <ChevronRight size={24} color="#999" strokeWidth={2} />
+
+      <ChevronRight size={22} color={Colors.textMuted} strokeWidth={2.2} />
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Matches</Text>
-        </View>
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+        <Header title="Matches" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -97,11 +98,9 @@ const MatchesScreen = () => {
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Matches</Text>
-        </View>
-        <View style={styles.emptyContainer}>
-          <Text style={{ color: "red" }}>{error}</Text>
+        <Header title="Matches" />
+        <View style={styles.center}>
+          <Text style={styles.error}>{error}</Text>
         </View>
       </SafeAreaView>
     );
@@ -110,13 +109,11 @@ const MatchesScreen = () => {
   if (!token || matches.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Matches</Text>
-        </View>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No Matches Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start swiping to find jobs you're interested in!
+        <Header title="Matches" />
+        <View style={styles.center}>
+          <Text style={styles.emptyTitle}>No matches yet</Text>
+          <Text style={styles.emptyText}>
+            Swipe right on jobs you like to start conversations.
           </Text>
         </View>
       </SafeAreaView>
@@ -125,16 +122,16 @@ const MatchesScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Matches</Text>
-        <Text style={styles.subtitle}>{matches.length} jobs you liked</Text>
-      </View>
+      <Header
+        title="Matches"
+        subtitle={`${matches.length} job${matches.length > 1 ? "s" : ""}`}
+      />
 
       <FlatList
         data={matches}
         renderItem={renderJobItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -143,84 +140,105 @@ const MatchesScreen = () => {
 
 export default MatchesScreen;
 
+/* ---------- Header Component ---------- */
+const Header = ({ title, subtitle }: { title: string; subtitle?: string }) => (
+  <View style={styles.header}>
+    <Text style={styles.headerTitle}>{title}</Text>
+    {subtitle && <Text style={styles.headerSubtitle}>{subtitle}</Text>}
+  </View>
+);
+
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Colors.background,
   },
+
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#1A1A1A",
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: "900",
+    color: Colors.text,
+    letterSpacing: -0.6,
   },
-  subtitle: {
-    fontSize: 15,
-    color: "#666",
+  headerSubtitle: {
     marginTop: 4,
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textMuted,
   },
-  listContent: {
-    padding: 16,
+
+  list: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
-  jobItem: {
+
+  card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...Shadow,
   },
+
   logo: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    marginRight: 16,
+    width: 56,
+    height: 56,
+    borderRadius: Radius.md,
+    marginRight: Spacing.md,
+    backgroundColor: Colors.backgroundMuted,
   },
-  jobInfo: {
+
+  info: {
     flex: 1,
   },
   jobTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A1A1A",
+    fontSize: 17,
+    fontWeight: "800",
+    color: Colors.text,
     marginBottom: 4,
   },
   company: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#007AFF",
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.primary,
     marginBottom: 6,
   },
-  description: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 18,
+  hint: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textMuted,
   },
-  emptyContainer: {
+
+  center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#1A1A1A",
-    marginBottom: 12,
+    fontSize: 26,
+    fontWeight: "900",
+    color: Colors.text,
+    marginBottom: 10,
   },
-  emptySubtitle: {
-    fontSize: 16,
-    color: "#666",
+  emptyText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.textMuted,
     textAlign: "center",
+    lineHeight: 22,
+  },
+  error: {
+    color: Colors.danger,
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

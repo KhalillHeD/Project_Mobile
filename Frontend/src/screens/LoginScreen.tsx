@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { PrimaryButton } from "../components/PrimaryButton";
-import { TextInputField } from "../components/TextInputField";
+import PrimaryButton from "../components/PrimaryButton";
+import TextInputField from "../components/TextInputField";
+import AuroraBackground from "../components/AuroraBackground";
 import { useAppContext } from "../context/AppContext";
 import { loginUser, fetchMe } from "../api/auth";
 import { useRouter } from "expo-router";
+
+import { Colors } from "../theme/colors";
+import { Spacing } from "../theme/spacing";
+import { Radius } from "../theme/radius";
 
 export const LoginScreen = () => {
   const { role: intendedRole, setRole, setUser, setToken } = useAppContext();
@@ -25,16 +30,17 @@ export const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const roleTitle = useMemo(
+    () => (intendedRole === "recruiter" ? "Recruiter Login" : "Jobseeker Login"),
+    [intendedRole]
+  );
+
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const payload = {
-        username: emailOrUsername.trim(),
-        password,
-      };
-
+      const payload = { username: emailOrUsername.trim(), password };
       const data = await loginUser(payload);
       const accessToken = data?.access as string;
 
@@ -53,12 +59,9 @@ export const LoginScreen = () => {
         return;
       }
 
-      // Enforce role chosen on RoleSelectionScreen
       if (intendedRole && backendRole !== intendedRole) {
         setToken("");
-        setError(
-          `This account is a ${backendRole}, but you selected ${intendedRole}.`
-        );
+        setError(`This account is a ${backendRole}, but you selected ${intendedRole}.`);
         return;
       }
 
@@ -69,10 +72,10 @@ export const LoginScreen = () => {
         name: me.username ?? "",
         email: me.email ?? "",
         role: backendRole,
+        avatar: me.avatar ?? "",
       });
 
-      // ✅ MAIN PAGE AFTER LOGIN
-      router.replace("/matches"); // requires app/matches.tsx
+      router.replace("/matches");
     } catch (e: any) {
       console.log("Login error:", e);
       setError(e?.data?.detail || "Login failed. Check your credentials.");
@@ -81,99 +84,134 @@ export const LoginScreen = () => {
     }
   };
 
-  const handleSignup = () => {
-    // ✅ SIGNUP PAGE
-    router.push("/signup"); // requires app/signup.tsx
-  };
-
-  const roleTitle =
-    intendedRole === "recruiter" ? "Recruiter Login" : "Jobseeker Login";
+  const handleSignup = () => router.push("/signup");
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+    <AuroraBackground>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>{roleTitle}</Text>
-            <Text style={styles.subtitle}>Welcome back! Sign in to continue</Text>
-          </View>
-
-          <View style={styles.form}>
-            {error && (
-              <Text style={{ color: "red", marginBottom: 8 }}>{error}</Text>
-            )}
-
-            <TextInputField
-              label="Username"
-              value={emailOrUsername}
-              onChangeText={setEmailOrUsername}
-              placeholder="your_username"
-              autoCapitalize="none"
-            />
-
-            <TextInputField
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-            />
-
-            <PrimaryButton
-              title={loading ? "Logging in..." : "Login"}
-              onPress={handleLogin}
-              style={styles.loginButton}
-              disabled={loading}
-            />
-
-            {loading && (
-              <ActivityIndicator style={{ marginTop: 8 }} color="#007AFF" />
-            )}
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.header}>
+              <Text style={styles.brand}>JobSwipe</Text>
+              <Text style={styles.title}>{roleTitle}</Text>
+              <Text style={styles.subtitle}>Welcome back! Sign in to continue</Text>
             </View>
 
-            <PrimaryButton
-              title="Continue with Google"
-              onPress={() => {}}
-              variant="outline"
-            />
+            <View style={styles.card}>
+              {error && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
 
-            <TouchableOpacity onPress={handleSignup} style={styles.signupPrompt}>
-              <Text style={styles.signupText}>
-                Don't have an account?{" "}
-                <Text style={styles.signupLink}>Sign up</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <View style={styles.form}>
+                <TextInputField
+                  label="Username"
+                  value={emailOrUsername}
+                  onChangeText={setEmailOrUsername}
+                  placeholder="your_username"
+                />
+
+                <TextInputField
+                  label="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  secureTextEntry
+                />
+
+                <PrimaryButton
+                  title={loading ? "Logging in..." : "Login"}
+                  onPress={handleLogin}
+                  style={styles.loginButton}
+                  disabled={loading}
+                  variant="solid"
+                />
+
+                {loading && (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator color={Colors.primary} />
+                    <Text style={styles.loadingText}>Signing you in…</Text>
+                  </View>
+                )}
+
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <PrimaryButton title="Continue with Google" onPress={() => {}} variant="outline" />
+
+                <TouchableOpacity onPress={handleSignup} style={styles.signupPrompt} activeOpacity={0.8}>
+                  <Text style={styles.signupText}>
+                    Don&apos;t have an account? <Text style={styles.signupLink}>Sign up</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={{ height: Spacing.xl }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </AuroraBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
+  container: { flex: 1 },
   keyboardView: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40 },
-  header: { marginBottom: 40 },
-  title: { fontSize: 32, fontWeight: "800", color: "#1A1A1A", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#666" },
-  form: { flex: 1 },
-  loginButton: { marginTop: 8, marginBottom: 24 },
-  divider: { flexDirection: "row", alignItems: "center", marginVertical: 24 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "#DDD" },
-  dividerText: { marginHorizontal: 16, color: "#999", fontSize: 14 },
-  signupPrompt: { marginTop: 32, alignItems: "center" },
-  signupText: { fontSize: 15, color: "#666" },
-  signupLink: { color: "#007AFF", fontWeight: "600" },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    justifyContent: "center",
+  },
+
+  header: { alignItems: "center", marginBottom: Spacing.xl },
+  brand: { fontSize: 34, fontWeight: "900", color: "#fff", letterSpacing: -0.6 },
+  title: { marginTop: 10, fontSize: 22, fontWeight: "900", color: "#fff", letterSpacing: -0.3 },
+  subtitle: { marginTop: 6, fontSize: 14, fontWeight: "600", color: "rgba(255,255,255,0.78)", textAlign: "center" },
+
+  card: {
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    padding: Spacing.xl,
+  },
+
+  form: { gap: Spacing.lg },
+
+  errorBox: {
+    backgroundColor: "rgba(254,242,242,0.95)",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.md,
+  },
+  errorText: { color: "#991B1B", fontSize: 13, fontWeight: "700", lineHeight: 18 },
+
+  loginButton: { marginTop: 4 },
+
+  loadingRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 6 },
+  loadingText: { color: "rgba(255,255,255,0.78)", fontSize: 13, fontWeight: "600" },
+
+  divider: { flexDirection: "row", alignItems: "center", marginVertical: Spacing.sm },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.18)" },
+  dividerText: { marginHorizontal: 14, color: "rgba(255,255,255,0.70)", fontSize: 13, fontWeight: "700" },
+
+  signupPrompt: { marginTop: Spacing.sm, alignItems: "center" },
+  signupText: { fontSize: 14, color: "rgba(255,255,255,0.75)", fontWeight: "600" },
+  signupLink: { color: "#fff", fontWeight: "900" },
 });

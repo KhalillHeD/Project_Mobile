@@ -1,85 +1,100 @@
-import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
+import React from "react";
+import { Pressable, StyleSheet, Text, ViewStyle, TextStyle } from "react-native";
+import { Colors } from "../theme/colors";
+import { Radius } from "../theme/radius";
+import { Shadow } from "../theme/shadow";
+import { Spacing } from "../theme/spacing";
 
-interface PrimaryButtonProps {
+type Props = {
   title: string;
   onPress: () => void;
+  disabled?: boolean;
+  variant?: "solid" | "outline" | "custom";
   style?: ViewStyle;
   textStyle?: TextStyle;
-  variant?: 'primary' | 'secondary' | 'outline';
-}
+};
 
-export const PrimaryButton = ({
+export default function PrimaryButton({
   title,
   onPress,
+  disabled,
+  variant = "solid",
   style,
   textStyle,
-  variant = 'primary',
-}: PrimaryButtonProps) => {
+}: Props) {
   return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        variant === 'secondary' && styles.secondaryButton,
-        variant === 'outline' && styles.outlineButton,
-        style,
-      ]}
+    <Pressable
       onPress={onPress}
-      activeOpacity={0.8}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.base,
+
+        variant === "solid" && styles.solid,
+        variant === "outline" && styles.outline,
+
+        pressed &&
+          !disabled &&
+          (variant === "solid"
+            ? styles.solidPressed
+            : styles.outlinePressed),
+
+        disabled && styles.disabled,
+        style, // allow override last
+      ]}
     >
       <Text
         style={[
           styles.text,
-          variant === 'secondary' && styles.secondaryText,
-          variant === 'outline' && styles.outlineText,
-          textStyle,
+          variant === "outline" && styles.textOutline,
+          textStyle, // allow override last
         ]}
       >
         {title}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  base: {
+    height: 54,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.xl,
+    ...Shadow,
   },
-  secondaryButton: {
-    backgroundColor: '#34C759',
+
+  /* ===== SOLID (PRIMARY) ===== */
+  solid: {
+    backgroundColor: Colors.primary,
   },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    shadowOpacity: 0,
-    elevation: 0,
+  solidPressed: {
+    backgroundColor: Colors.primaryPressed,
+    transform: [{ scale: 0.985 }],
   },
+
+  /* ===== OUTLINE (SECONDARY, DARK-SAFE) ===== */
+  outline: {
+    backgroundColor: "#2A2F45", // 🔥 readable on dark cards
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  outlinePressed: {
+    backgroundColor: "#32385A",
+    transform: [{ scale: 0.985 }],
+  },
+
+  disabled: {
+    opacity: 0.45,
+  },
+
   text: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "800",
   },
-  secondaryText: {
-    color: '#FFFFFF',
-  },
-  outlineText: {
-    color: '#007AFF',
+  textOutline: {
+    color: "#FFFFFF", // 🔥 FIXED
   },
 });

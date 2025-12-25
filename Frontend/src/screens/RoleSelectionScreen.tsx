@@ -1,8 +1,8 @@
-
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, Pressable } from "react-native";
 import { Briefcase, UserCircle } from "lucide-react-native";
-import { PrimaryButton } from "../components/PrimaryButton";
+import PrimaryButton from "../components/PrimaryButton";
+import AuroraBackground from "../components/AuroraBackground";
 import { useAppContext } from "../context/AppContext";
 import { useRouter } from "expo-router";
 
@@ -10,139 +10,168 @@ const RoleSelectionScreen = () => {
   const { setRole } = useAppContext();
   const router = useRouter();
 
-  // login for selected role
-  const handleRoleSelection = (selectedRole: "recruiter" | "jobseeker") => {
-    setRole(selectedRole);
+  const handleRoleSelection = (role: "recruiter" | "jobseeker") => {
+    setRole(role);
     router.push("/login");
   };
 
-  // signup for selected role (use these if you add signup buttons)
-  const goToRecruiterSignup = () => {
-    setRole("recruiter");
-    router.push("/signup");
-  };
-
-  const goToJobseekerSignup = () => {
-    setRole("jobseeker");
-    router.push("/signup");
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.appName}>JobSwipe</Text>
-          <Text style={styles.tagline}>Find Your Perfect Match</Text>
-        </View>
+    <AuroraBackground>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.brand}>JobSwipe</Text>
+            <Text style={styles.tagline}>Find your perfect match</Text>
+          </View>
 
-        <View style={styles.buttonContainer}>
-          <View className="role-card" style={styles.roleCard}>
-            <View style={styles.iconContainer}>
-              <Briefcase size={48} color="#007AFF" strokeWidth={2} />
+          {/* Recruiter Card */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => handleRoleSelection("recruiter")}
+          >
+            <View style={[styles.iconWrap, styles.iconRecruiter]}>
+              <Briefcase size={26} color="#FF4D5A" strokeWidth={2.2} />
             </View>
-            <Text style={styles.roleTitle}>I'm Hiring</Text>
-            <Text style={styles.roleDescription}>
+
+            <Text style={styles.cardTitle}>I’m hiring</Text>
+            <Text style={styles.cardSubtitle}>
               Post jobs and find talented candidates
             </Text>
+
             <PrimaryButton
               title="Continue as Recruiter"
               onPress={() => handleRoleSelection("recruiter")}
-              style={styles.button}
+              variant="solid"
             />
-            {/* Example extra signup button:
-            <PrimaryButton
-              title="Sign up as Recruiter"
-              onPress={goToRecruiterSignup}
-              style={styles.button}
-              variant="outline"
-            /> */}
-          </View>
+          </Pressable>
 
-          <View style={styles.roleCard}>
-            <View style={styles.iconContainer}>
-              <UserCircle size={48} color="#34C759" strokeWidth={2} />
+          {/* Jobseeker Card */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => handleRoleSelection("jobseeker")}
+          >
+            <View style={[styles.iconWrap, styles.iconJobseeker]}>
+              <UserCircle size={26} color="#34D399" strokeWidth={2.2} />
             </View>
-            <Text style={styles.roleTitle}>Looking for Work</Text>
-            <Text style={styles.roleDescription}>
+
+            <Text style={styles.cardTitle}>Looking for work</Text>
+            <Text style={styles.cardSubtitle}>
               Discover exciting job opportunities
             </Text>
-            <PrimaryButton
+
+          <PrimaryButton
               title="Continue as Jobseeker"
               onPress={() => handleRoleSelection("jobseeker")}
-              style={styles.button}
-              variant="secondary"
-            />
-            {/* Example extra signup button:
-            <PrimaryButton
-              title="Sign up as Jobseeker"
-              onPress={goToJobseekerSignup}
-              style={styles.button}
               variant="outline"
-            /> */}
-          </View>
+              style={{
+                backgroundColor: "#2A2F45",   // solid, readable
+                borderColor: "rgba(255,255,255,0.22)",
+                borderWidth: 1,
+              }}
+              textStyle={{
+                color: "#FFFFFF",             // 🔥 readable
+                fontWeight: "800",
+              }}
+          />
+
+            
+
+
+            
+          </Pressable>
+
+          <Text style={styles.footer}>
+            Tip: you can switch roles later from Profile.
+          </Text>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </AuroraBackground>
   );
 };
 
 export default RoleSelectionScreen;
 
+/* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-  content: {
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
   },
+
+  /* Header */
   header: {
     alignItems: "center",
-    marginBottom: 60,
+    marginBottom: 36,
   },
-  appName: {
+  brand: {
     fontSize: 42,
-    fontWeight: "800",
-    color: "#1A1A1A",
-    marginBottom: 8,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: -0.8,
   },
   tagline: {
-    fontSize: 18,
-    color: "#666",
-    fontWeight: "500",
+    marginTop: 6,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.75)",
   },
-  buttonContainer: {
-    gap: 24,
+
+  /* Cards */
+  card: {
+    backgroundColor: "#1C1F2E", // 🔥 solid, readable
+    borderRadius: 28,
+    padding: 22,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
-  roleCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 28,
+  cardPressed: {
+    transform: [{ scale: 0.985 }],
+  },
+
+  iconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    justifyContent: "center",
+    marginBottom: 14,
   },
-  iconContainer: {
+  iconRecruiter: {
+    backgroundColor: "rgba(255,77,90,0.15)",
+  },
+  iconJobseeker: {
+    backgroundColor: "rgba(52,211,153,0.15)",
+  },
+
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 6,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.70)",
+    lineHeight: 20,
     marginBottom: 16,
   },
-  roleTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
-  },
-  roleDescription: {
-    fontSize: 15,
-    color: "#666",
+
+  footer: {
+    marginTop: 16,
     textAlign: "center",
-    marginBottom: 20,
-  },
-  button: {
-    width: "100%",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.65)",
   },
 });
