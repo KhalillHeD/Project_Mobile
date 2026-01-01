@@ -1,4 +1,3 @@
-// app/signup.tsx
 import React from "react";
 import SignupScreen from "../src/screens/SignupScreen";
 

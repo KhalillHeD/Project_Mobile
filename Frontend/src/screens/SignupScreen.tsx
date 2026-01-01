@@ -29,8 +29,7 @@ console.log("TextInputField:", TextInputField);
 
 const SignupScreen = () => {
   const router = useRouter();
-  const { role: intendedRole, setRole, setUser, setToken } = useAppContext();
-
+  const { role: intendedRole, setRole, setUser, setAccessToken, setRefreshToken } = useAppContext();
   // Core fields
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -47,72 +46,82 @@ const SignupScreen = () => {
     () => (intendedRole === "recruiter" ? "Recruiter Signup" : "Jobseeker Signup"),
     [intendedRole]
   );
+  
+const handleSignup = async () => {
+  setLoading(true);
+  setError(null);
 
-  const handleSignup = async () => {
-    setLoading(true);
-    setError(null);
+  try {
+    await registerUser({
+      username: username.trim(),
+      email: email.trim(),
+      password,
+      role: intendedRole || "jobseeker",
+      company_name: company.trim(),
+      position_title: position.trim(),
+    });
 
-    try {
-      // 1) create account
-      await registerUser({
-        username: username.trim(),
-        email: email.trim(),
-        password,
-      
-        role: intendedRole || "jobseeker",
-      });
+    // 2) login (SimpleJWT returns { access, refresh }) [web:542]
+    const login = await loginUser({ username: username.trim(), password });
 
-      // 2) login
-      const login = await loginUser({ username: username.trim(), password });
-      const accessToken = login?.access as string;
+    const access = login?.access as string | undefined;
+    const refresh = login?.refresh as string | undefined;
 
-      if (!accessToken) {
-        setError("Signup succeeded but login failed. Please try logging in.");
-        return;
-      }
-
-      setToken(accessToken);
-
-      // 3) fetch profile
-      const me = await fetchMe(accessToken);
-      const backendRole = me?.role;
-
-      if (!backendRole) {
-        setError("Signup/login worked but role missing from profile.");
-        return;
-      }
-
-      // enforce role selected
-      if (intendedRole && backendRole !== intendedRole) {
-        setToken("");
-        setError(
-          `This account is a ${backendRole}, but you selected ${intendedRole}.`
-        );
-        return;
-      }
-
-      setRole(backendRole);
-
-      setUser({
-        id: String(me.id ?? me.username ?? ""),
-        name: me.username ?? "",
-        email: me.email ?? "",
-        role: backendRole,
-        avatar: me.avatar ?? "",
-        company: me.company ?? me.company_name ?? "",
-        bio: me.bio ?? "",
-        skills: me.skills ?? "",
-        yearsOfExperience: me.yearsOfExperience ?? me.years_of_experience ?? 0,
-      });
-
-      router.replace("/matches");
-    } catch (e: any) {
-      console.log("Signup error:", e);
-      setError(e?.data?.detail || "Signup failed. Please check your inputs.");
-    } finally {
-      setLoading(false);
+    if (!access || !refresh) {
+      setError("Signup succeeded but login failed (missing tokens). Please try logging in.");
+      return;
     }
-  };
+
+    await setAccessToken(access);
+    await setRefreshToken(refresh);
+
+    // 3) fetch profile
+    const me = await fetchMe(access);
+    const backendRole = me?.role;
+
+    if (!backendRole) {
+      setError("Signup/login worked but role missing from profile.");
+      return;
+    }
+
+    // enforce role selected
+    if (intendedRole && backendRole !== intendedRole) {
+      await setAccessToken(null);
+      await setRefreshToken(null);
+      setError(`This account is a ${backendRole}, but you selected ${intendedRole}.`);
+      return;
+    }
+
+    await setRole(backendRole);
+
+    // MeSerializer returns { id, name, email, role, ... }
+    await setUser({
+      id: String(me.id ?? ""),
+      name: me.name ?? "",                 // ✅ use me.name (not me.username)
+      email: me.email ?? "",
+      role: backendRole,
+      avatar: me.avatar ?? null,
+
+      company: me.company_name ?? "",
+      bio: me.bio ?? "",
+      skills: me.skills ?? "",
+      yearsOfExperience: me.experience_years ?? 0,  // ✅ backend is experience_years
+    } as any);
+
+    router.replace("/matches");
+  } catch (e: any) {
+    console.log("Signup error:", e);
+    // your apiRequest throws {status, data}
+    const msg =
+      e?.data?.detail ||
+      (typeof e?.data === "string" ? e.data : null) ||
+      "Signup failed. Please check your inputs.";
+    setError(msg);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <AuroraBackground>

@@ -1,6 +1,7 @@
 # jsr/models.py
 from django.db import models
 from api.models import UserProfile
+from django.conf import settings
 
 class Job(models.Model):
     recruiter = models.ForeignKey(
@@ -39,3 +40,29 @@ class Match(models.Model):
 
     class Meta:
         unique_together = ("job", "jobseeker")
+
+class Profile(models.Model):
+    ROLE_JOBSEEKER = "jobseeker"
+    ROLE_RECRUITER = "recruiter"
+    ROLE_CHOICES = [
+        (ROLE_JOBSEEKER, "Jobseeker"),
+        (ROLE_RECRUITER, "Recruiter"),
+    ]
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
+    # Common fields
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+
+    # Jobseeker fields
+    skills = models.TextField(blank=True)  # comma-separated or free text
+    bio = models.TextField(blank=True)
+    years_of_experience = models.PositiveIntegerField(blank=True, null=True)
+
+    # Recruiter fields
+    company = models.CharField(max_length=255, blank=True)
+    recruiter_role = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.user_id} ({self.role})"

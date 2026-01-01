@@ -10,20 +10,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { useRouter } from "expo-router";
+
 import PrimaryButton from "../components/PrimaryButton";
 import TextInputField from "../components/TextInputField";
 import AuroraBackground from "../components/AuroraBackground";
 import { useAppContext } from "../context/AppContext";
 import { loginUser, fetchMe } from "../api/auth";
-import { useRouter } from "expo-router";
 
 import { Colors } from "../theme/colors";
 import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
 
 export const LoginScreen = () => {
-  const { role: intendedRole, setRole, setUser, setToken } = useAppContext();
   const router = useRouter();
+
+  const { role: intendedRole, setRole, setUser, setAccessToken, setRefreshToken } =
+    useAppContext() as any;
 
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -40,45 +43,55 @@ export const LoginScreen = () => {
     setError(null);
 
     try {
-      const payload = { username: emailOrUsername.trim(), password };
-      const data = await loginUser(payload);
-      const accessToken = data?.access as string;
+      const data = await loginUser({ username: emailOrUsername.trim(), password });
 
-      if (!accessToken) {
-        setError("Login failed: no access token returned.");
+      if (!data?.access || !data?.refresh) {
+        setError("Login failed: missing access/refresh token.");
         return;
       }
 
-      setToken(accessToken);
+      await setAccessToken(data.access);
+      await setRefreshToken(data.refresh);
 
-      const me = await fetchMe(accessToken);
+      const me = await fetchMe(data.access);
       const backendRole = me?.role;
 
       if (!backendRole) {
-        setError("Login failed: role missing from /me response.");
+        setError("Login failed: role missing from /me.");
         return;
       }
 
       if (intendedRole && backendRole !== intendedRole) {
-        setToken("");
+        await setAccessToken(null);
+        await setRefreshToken(null);
         setError(`This account is a ${backendRole}, but you selected ${intendedRole}.`);
         return;
       }
 
-      setRole(backendRole);
+      await setRole(backendRole);
 
-      setUser({
-        id: String(me.id ?? me.username ?? ""),
-        name: me.username ?? "",
+      await setUser({
+        id: String(me.id ?? ""),
+        name: me.name ?? "", // ✅ correct
         email: me.email ?? "",
         role: backendRole,
-        avatar: me.avatar ?? "",
+        avatar: me.avatar ?? null,
+
+        skills: me.skills ?? "",
+        bio: me.bio ?? "",
+        experience_years: me.experience_years ?? null,
+
+        company_name: me.company_name ?? "",
+        position_title: me.position_title ?? "",
       });
 
       router.replace("/matches");
     } catch (e: any) {
-      console.log("Login error:", e);
-      setError(e?.data?.detail || "Login failed. Check your credentials.");
+      const msg =
+        e?.data?.detail ||
+        (typeof e?.data === "string" ? e.data : null) ||
+        "Login failed. Check your credentials.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -117,6 +130,7 @@ export const LoginScreen = () => {
                   value={emailOrUsername}
                   onChangeText={setEmailOrUsername}
                   placeholder="your_username"
+                  autoCapitalize="none"
                 />
 
                 <TextInputField
@@ -180,7 +194,13 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: Spacing.xl },
   brand: { fontSize: 34, fontWeight: "900", color: "#fff", letterSpacing: -0.6 },
   title: { marginTop: 10, fontSize: 22, fontWeight: "900", color: "#fff", letterSpacing: -0.3 },
-  subtitle: { marginTop: 6, fontSize: 14, fontWeight: "600", color: "rgba(255,255,255,0.78)", textAlign: "center" },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.78)",
+    textAlign: "center",
+  },
 
   card: {
     backgroundColor: "rgba(255,255,255,0.10)",
@@ -204,7 +224,13 @@ const styles = StyleSheet.create({
 
   loginButton: { marginTop: 4 },
 
-  loadingRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 6 },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 6,
+  },
   loadingText: { color: "rgba(255,255,255,0.78)", fontSize: 13, fontWeight: "600" },
 
   divider: { flexDirection: "row", alignItems: "center", marginVertical: Spacing.sm },

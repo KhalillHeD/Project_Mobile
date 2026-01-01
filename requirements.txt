@@ -113,3 +113,4 @@ whitenoise==6.4.0
 psycopg[binary]
 djangorestframework
 djangorestframework-simplejwt
+Pillow
