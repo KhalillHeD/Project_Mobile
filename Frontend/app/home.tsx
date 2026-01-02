@@ -16,3 +16,4 @@ export default function Home() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "transparent" },
 });
+

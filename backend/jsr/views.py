@@ -118,4 +118,21 @@ class MatchListView(generics.ListAPIView):
             )
 
         return Match.objects.none()
+    
 
+
+
+
+class RecruiterJobListCreateView(generics.ListCreateAPIView):
+    serializer_class = JobSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Job.objects.filter(
+            recruiter__user=self.request.user
+    ).order_by("-created_at")
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["request"] = self.request
+        return ctx

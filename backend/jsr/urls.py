@@ -9,4 +9,8 @@ urlpatterns = [
     path("jobs/<int:pk>/like/", views.JobLikeView.as_view(), name="job-like"),
 
     path("matches/", views.MatchListView.as_view(), name="match-list"),
+
+     # NEW BY MEHDI
+    path("my-jobs/", views.RecruiterJobListCreateView.as_view(),
+         name="recruiter-job-list-create"),
 ]

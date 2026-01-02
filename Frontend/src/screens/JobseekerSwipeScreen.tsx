@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,52 +8,63 @@ import {
   PanResponder,
   Dimensions,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { X, Heart } from "lucide-react-native";
-import JobCard from "../components/JobCard";
-import { useAppContext } from "../context/AppContext";
 
+import JobOfferCard from "../components/JobOfferCard";
+import { useAppContext } from "../context/AppContext";
 import { Colors } from "../theme/colors";
 import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
 import { Shadow } from "../theme/shadow";
+import { Job, fetchJobsForSeeker, likeOrDislikeJob } from "../jsr/jobs";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
-const withImage = (job: any) => {
-  if (!job) return job;
-
-  // keep existing image if already present
-  if (job.image) return job;
-
-  const fallback =
-    job.companyLogo ||
-    job.imageUrl ||
-    job.logo ||
-    (Array.isArray(job.images) ? job.images[0] : undefined) ||
-    (Array.isArray(job.photos) ? job.photos[0] : undefined);
-
-  // do NOT mutate original object
-  return fallback ? { ...job, image: fallback } : job;
-};
-
-
-
-
 export const JobseekerSwipeScreen = () => {
-  const { jobs, likeJob, swipedJobIds, addSwipedJob } = useAppContext();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const { role, accessToken } = useAppContext() as any;
+
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [swipedIds, setSwipedIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const position = useRef(new Animated.ValueXY()).current;
 
   const availableJobs = useMemo(
-    () => jobs.filter((j) => !swipedJobIds.includes(j.id)),
-    [jobs, swipedJobIds]
+    () => jobs.filter((j) => !swipedIds.includes(j.id)),
+    [jobs, swipedIds]
   );
 
+  const [currentIndex, setCurrentIndex] = useState(0);
   const currentJob = availableJobs[currentIndex];
   const nextJob = availableJobs[currentIndex + 1];
+
+  useEffect(() => {
+    if (role !== "jobseeker" || !accessToken) return;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = (await fetchJobsForSeeker(accessToken)) as Job[];
+        setJobs(data);
+      } catch (e: any) {
+        const msg =
+          e?.data?.detail ||
+          (typeof e?.data === "string" ? e.data : JSON.stringify(e?.data)) ||
+          e?.message ||
+          "Failed to load jobs.";
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [role, accessToken]);
 
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
@@ -61,7 +72,6 @@ export const JobseekerSwipeScreen = () => {
     extrapolate: "clamp",
   });
 
-  // Like/Nope progress
   const likeOpacity = position.x.interpolate({
     inputRange: [0, SCREEN_WIDTH / 6],
     outputRange: [0, 1],
@@ -74,7 +84,6 @@ export const JobseekerSwipeScreen = () => {
     extrapolate: "clamp",
   });
 
-  // Next card depth illusion
   const nextScale = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
     outputRange: [0.965, 0.94, 0.965],
@@ -93,14 +102,6 @@ export const JobseekerSwipeScreen = () => {
     extrapolate: "clamp",
   });
 
-  // Parallax for hero image
-  const parallaxX = position.x.interpolate({
-    inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-    outputRange: [18, 0, -18],
-    extrapolate: "clamp",
-  });
-
-  // Glow feedback on card edge
   const glowGreen = position.x.interpolate({
     inputRange: [0, SCREEN_WIDTH / 3],
     outputRange: [0, 1],
@@ -113,10 +114,15 @@ export const JobseekerSwipeScreen = () => {
     extrapolate: "clamp",
   });
 
-  const handleSwipeComplete = (direction: "left" | "right") => {
-    if (currentJob) {
-      addSwipedJob(currentJob.id);
-      if (direction === "right") likeJob(currentJob);
+  const handleSwipeComplete = async (direction: "left" | "right") => {
+    if (currentJob && accessToken) {
+      try {
+        const action = direction === "right" ? "like" : "dislike";
+        await likeOrDislikeJob(accessToken, currentJob.id, action);
+      } catch {
+        // optional
+      }
+      setSwipedIds((prev) => [...prev, currentJob.id]);
     }
     position.setValue({ x: 0, y: 0 });
     setCurrentIndex((p) => p + 1);
@@ -150,12 +156,43 @@ export const JobseekerSwipeScreen = () => {
   ).current;
 
   const handleButtonPress = (direction: "left" | "right") => {
-    const toValue = direction === "right" ? SCREEN_WIDTH + 140 : -SCREEN_WIDTH - 140;
+    const toValue =
+      direction === "right" ? SCREEN_WIDTH + 140 : -SCREEN_WIDTH - 140;
     Animated.spring(position, {
       toValue: { x: toValue, y: 0 },
       useNativeDriver: true,
     }).start(() => handleSwipeComplete(direction));
   };
+
+  if (role !== "jobseeker") {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.error}>Only jobseekers can see this screen.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.error}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!currentJob) {
     return (
@@ -169,16 +206,11 @@ export const JobseekerSwipeScreen = () => {
   }
 
   const cardStyle = {
-    transform: [
-      { translateX: position.x },
-      { translateY: position.y },
-      { rotate },
-    ],
+    transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Discover</Text>
         <Text style={styles.subtitle}>
@@ -186,9 +218,7 @@ export const JobseekerSwipeScreen = () => {
         </Text>
       </View>
 
-      {/* Deck */}
       <View style={styles.deck}>
-        {/* Next card (behind) */}
         {nextJob && (
           <Animated.View
             pointerEvents="none"
@@ -200,47 +230,34 @@ export const JobseekerSwipeScreen = () => {
               },
             ]}
           >
-            <JobCard job={withImage(nextJob)} />
-
+            <JobOfferCard job={nextJob} />
           </Animated.View>
         )}
 
-        {/* Current card */}
-        <Animated.View style={[styles.cardWrap, cardStyle]} {...panResponder.panHandlers}>
-          {/* Glow edges */}
+        <Animated.View
+          style={[styles.cardWrap, cardStyle]}
+          {...panResponder.panHandlers}
+        >
           <Animated.View
             pointerEvents="none"
-            style={[
-              styles.glow,
-              styles.glowGreen,
-              { opacity: glowGreen },
-            ]}
+            style={[styles.glow, styles.glowGreen, { opacity: glowGreen }]}
           />
           <Animated.View
             pointerEvents="none"
-            style={[
-              styles.glow,
-              styles.glowRed,
-              { opacity: glowRed },
-            ]}
+            style={[styles.glow, styles.glowRed, { opacity: glowRed }]}
           />
 
-          {/* Like/Nope badges */}
           <Animated.View style={[styles.likeBadge, { opacity: likeOpacity }]}>
             <Text style={styles.likeText}>LIKE</Text>
           </Animated.View>
-
           <Animated.View style={[styles.nopeBadge, { opacity: nopeOpacity }]}>
             <Text style={styles.nopeText}>SKIP</Text>
           </Animated.View>
 
-          {/* Parallax-enabled card */}
-          <JobCard job={withImage(currentJob)} parallaxX={parallaxX} />
-            
+          <JobOfferCard job={currentJob} />
         </Animated.View>
       </View>
 
-      {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionBtn, styles.nopeBtn]}
@@ -264,7 +281,6 @@ export const JobseekerSwipeScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
-
   header: {
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.lg,
@@ -282,24 +298,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Colors.textMuted,
   },
-
   deck: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-
   nextCardWrap: {
     width: SCREEN_WIDTH - 40,
     position: "absolute",
   },
-
   cardWrap: {
     width: SCREEN_WIDTH - 40,
     ...Shadow,
   },
-
-  // Glow overlays
   glow: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: Radius.xl,
@@ -320,7 +331,6 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
   },
-
   likeBadge: {
     position: "absolute",
     top: 50,
@@ -339,7 +349,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "900",
   },
-
   nopeBadge: {
     position: "absolute",
     top: 50,
@@ -358,7 +367,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "900",
   },
-
   actions: {
     flexDirection: "row",
     justifyContent: "center",
@@ -376,7 +384,15 @@ const styles = StyleSheet.create({
   },
   nopeBtn: { borderWidth: 2, borderColor: Colors.danger },
   likeBtn: { borderWidth: 2, borderColor: Colors.success },
-
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  error: {
+    color: "#f87171",
+    fontWeight: "700",
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
@@ -396,3 +412,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+
