@@ -14,10 +14,7 @@ import { CreateJobPayload, createJob as apiCreateJob } from "../jsr/jobs";
 
 type Role = "jobseeker" | "recruiter" | null;
 
-<<<<<<< Updated upstream
 // If using phone: replace localhost with your PC LAN IP
-=======
->>>>>>> Stashed changes
 export const API_BASE = "http://localhost:8000";
 
 const STORAGE_KEYS = {

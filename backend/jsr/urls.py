@@ -7,10 +7,9 @@ urlpatterns = [
     path("jobs/<int:pk>/", views.JobDetailView.as_view(), name="job-detail"),
 
     path("jobs/<int:pk>/like/", views.JobLikeView.as_view(), name="job-like"),
-
     path("matches/", views.MatchListView.as_view(), name="match-list"),
+    path("matches/<int:pk>/", views.MatchUpdateStatusView.as_view(), name="match-update-status"),
 
-     # NEW BY MEHDI
-    path("my-jobs/", views.RecruiterJobListCreateView.as_view(),
-         name="recruiter-job-list-create"),
+    path("my-jobs/", views.RecruiterJobListCreateView.as_view(),name="recruiter-job-list-create"),
+    
 ]

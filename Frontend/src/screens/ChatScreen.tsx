@@ -1,12 +1,5 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity } from "react-native";
 import { ArrowLeft, Send } from "lucide-react-native";
 
 import { Colors } from "../theme/colors";
@@ -14,42 +7,45 @@ import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
 import { Shadow } from "../theme/shadow";
 
-export const ChatScreen = ({ navigation, route }: any) => {
-  const { job } = route.params;
+type Props = {
+  job?: string;              // JSON string
+  onBack: () => void;
+};
+
+export default function ChatScreenUI({ job, onBack }: Props) {
+  const parsedJob = useMemo(() => {
+    try {
+      return job ? JSON.parse(job) : null;
+    } catch {
+      return null;
+    }
+  }, [job]);
+
+  const title = parsedJob?.title ?? parsedJob?.job_title ?? "Chat";
+  const company = parsedJob?.company ?? parsedJob?.company_name ?? "";
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.back}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={onBack} style={styles.back} activeOpacity={0.7}>
           <ArrowLeft size={22} color={Colors.text} strokeWidth={2.4} />
         </TouchableOpacity>
 
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {job.title}
-          </Text>
-          <Text style={styles.headerSubtitle} numberOfLines={1}>
-            {job.company}
-          </Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+          {!!company && <Text style={styles.headerSubtitle} numberOfLines={1}>{company}</Text>}
         </View>
       </View>
 
-      {/* Chat canvas */}
       <View style={styles.chatArea}>
         <View style={styles.placeholder}>
           <Text style={styles.placeholderTitle}>Chat coming soon</Text>
           <Text style={styles.placeholderText}>
-            Once messaging is enabled, you’ll be able to chat directly with the recruiter here.
+            Once messaging is enabled, you’ll be able to chat here.
           </Text>
         </View>
       </View>
 
-      {/* Input */}
       <View style={styles.inputWrap}>
         <TextInput
           style={styles.input}
@@ -63,16 +59,10 @@ export const ChatScreen = ({ navigation, route }: any) => {
       </View>
     </SafeAreaView>
   );
-};
+}
 
-/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-
-  /* Header */
+  container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -83,55 +73,19 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   back: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 36, height: 36, borderRadius: Radius.pill,
+    alignItems: "center", justifyContent: "center",
     marginRight: Spacing.sm,
   },
-  headerInfo: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: Colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
+  headerInfo: { flex: 1 },
+  headerTitle: { fontSize: 17, fontWeight: "800", color: Colors.text },
+  headerSubtitle: { fontSize: 13, fontWeight: "600", color: Colors.textMuted, marginTop: 2 },
 
-  /* Chat */
-  chatArea: {
-    flex: 1,
-    padding: Spacing.xl,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeholder: {
-    alignItems: "center",
-    maxWidth: 300,
-  },
-  placeholderTitle: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: Colors.text,
-    marginBottom: Spacing.sm,
-    textAlign: "center",
-  },
-  placeholderText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.textMuted,
-    textAlign: "center",
-    lineHeight: 22,
-  },
+  chatArea: { flex: 1, padding: Spacing.xl, justifyContent: "center", alignItems: "center" },
+  placeholder: { alignItems: "center", maxWidth: 300 },
+  placeholderTitle: { fontSize: 22, fontWeight: "900", color: Colors.text, marginBottom: Spacing.sm, textAlign: "center" },
+  placeholderText: { fontSize: 15, fontWeight: "600", color: Colors.textMuted, textAlign: "center", lineHeight: 22 },
 
-  /* Input */
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -153,11 +107,9 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.pill,
+    width: 40, height: 40, borderRadius: Radius.pill,
     backgroundColor: Colors.backgroundMuted,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center",
+    ...Shadow,
   },
 });
