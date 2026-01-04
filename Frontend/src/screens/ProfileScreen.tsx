@@ -208,6 +208,22 @@ export const ProfileScreen = () => {
             )}
           </View>
 
+
+            {role === "recruiter" && (
+            <View style={{ marginTop: Spacing.lg, gap: Spacing.sm }}>
+            <PrimaryButton
+            title="Create job offer"
+            onPress={() => router.push("/add-job")}
+            variant="solid"
+            />
+            <PrimaryButton
+            title="View my job offers"
+            onPress={() => router.push("/my-jobs")}
+            variant="outline"
+            />
+            </View>
+            )} 
+
           <View style={{ marginTop: Spacing.lg }}>
             <PrimaryButton title="Log out" onPress={handleLogout} />
           </View>

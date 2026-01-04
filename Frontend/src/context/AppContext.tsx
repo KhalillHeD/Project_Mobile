@@ -1,12 +1,20 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { Job, dummyJobs } from "../data/jobs";
 import { User } from "../data/user";
+import { CreateJobPayload, createJob as apiCreateJob } from "../jsr/jobs";
 
 type Role = "jobseeker" | "recruiter" | null;
 
-// If using phone: replace localhost with your PC LAN IP (e.g. http://192.168.1.10:8000)
+// If using phone: replace localhost with your PC LAN IP
 export const API_BASE = "http://localhost:8000";
 
 const STORAGE_KEYS = {
@@ -45,6 +53,11 @@ interface AppContextType {
 
   swipedJobIds: string[];
   addSwipedJob: (jobId: string) => void;
+
+  // NEW: recruiter-owned job offers
+  myJobs: Job[];
+  setMyJobs: (jobs: Job[]) => void;
+  createJob: (payload: CreateJobPayload) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -62,24 +75,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [likedJobs, setLikedJobs] = useState<Job[]>([]);
   const [swipedJobIds, setSwipedJobIds] = useState<string[]>([]);
 
+  // >>> ADD THESE LINES: state for recruiter jobs <<<
+  const [myJobs, setMyJobs] = useState<Job[]>([]);
+  // <<<
+
+  // create job via API and update myJobs
+  const createJob = async (payload: CreateJobPayload) => {
+    if (!accessToken) throw new Error("Not authenticated");
+    const created = await apiCreateJob(accessToken, payload);
+    setMyJobs((prev) => [created as Job, ...prev]);
+  };
+
   useEffect(() => {
     let mounted = true;
 
     const load = async () => {
       try {
-        const [storedAccess, storedRefresh, storedRole, storedUser] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.accessToken),
-          AsyncStorage.getItem(STORAGE_KEYS.refreshToken),
-          AsyncStorage.getItem(STORAGE_KEYS.role),
-          AsyncStorage.getItem(STORAGE_KEYS.user),
-        ]);
+        const [storedAccess, storedRefresh, storedRole, storedUser] =
+          await Promise.all([
+            AsyncStorage.getItem(STORAGE_KEYS.accessToken),
+            AsyncStorage.getItem(STORAGE_KEYS.refreshToken),
+            AsyncStorage.getItem(STORAGE_KEYS.role),
+            AsyncStorage.getItem(STORAGE_KEYS.user),
+          ]);
 
         if (!mounted) return;
 
         setAccessTokenState(storedAccess);
         setRefreshTokenState(storedRefresh);
 
-        setRoleState(storedRole === "jobseeker" || storedRole === "recruiter" ? storedRole : null);
+        setRoleState(
+          storedRole === "jobseeker" || storedRole === "recruiter"
+            ? storedRole
+            : null
+        );
         setUserState(storedUser ? JSON.parse(storedUser) : null);
       } catch {
         if (!mounted) return;
@@ -156,34 +185,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     return data.access ?? null;
   };
-const fetchWithAuth = async (input: RequestInfo, init: RequestInit = {}) => {
-  const mergeHeaders = (base?: HeadersInit, extra?: HeadersInit) => ({
-    ...(base as any),
-    ...(extra as any),
-  });
 
-  const withToken = (token: string | null): RequestInit => ({
-    ...init,
-    headers: mergeHeaders(
-      init.headers,
-      token ? { Authorization: `Bearer ${token}` } : undefined
-    ),
-  });
+  const fetchWithAuth = async (input: RequestInfo, init: RequestInit = {}) => {
+    const mergeHeaders = (base?: HeadersInit, extra?: HeadersInit) => ({
+      ...(base as any),
+      ...(extra as any),
+    });
 
-  let res = await fetch(input, withToken(accessToken));
+    const withToken = (token: string | null): RequestInit => ({
+      ...init,
+      headers: mergeHeaders(
+        init.headers,
+        token ? { Authorization: `Bearer ${token}` } : undefined
+      ),
+    });
 
-  if (res.status === 401) {
-    const newAccess = await refreshAccessToken();
-    if (!newAccess) return res;
-    res = await fetch(input, withToken(newAccess));
-  }
+    let res = await fetch(input, withToken(accessToken));
 
-  return res;
-};
+    if (res.status === 401) {
+      const newAccess = await refreshAccessToken();
+      if (!newAccess) return res;
+      res = await fetch(input, withToken(newAccess));
+    }
+
+    return res;
+  };
 
   const addJob = (job: Job) => setJobs((prev) => [job, ...prev]);
   const likeJob = (job: Job) => setLikedJobs((prev) => [...prev, job]);
-  const addSwipedJob = (jobId: string) => setSwipedJobIds((prev) => [...prev, jobId]);
+  const addSwipedJob = (jobId: string) =>
+    setSwipedJobIds((prev) => [...prev, jobId]);
 
   const value = useMemo(
     () => ({
@@ -206,8 +237,21 @@ const fetchWithAuth = async (input: RequestInfo, init: RequestInit = {}) => {
       likeJob,
       swipedJobIds,
       addSwipedJob,
+      myJobs,
+      setMyJobs,
+      createJob,
     }),
-    [isReady, role, user, accessToken, refreshToken, jobs, likedJobs, swipedJobIds]
+    [
+      isReady,
+      role,
+      user,
+      accessToken,
+      refreshToken,
+      jobs,
+      likedJobs,
+      swipedJobIds,
+      myJobs,
+    ]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -215,6 +259,8 @@ const fetchWithAuth = async (input: RequestInfo, init: RequestInit = {}) => {
 
 export const useAppContext = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error("useAppContext must be used within AppProvider");
+  if (!context)
+    throw new Error("useAppContext must be used within AppProvider");
   return context;
 };
+

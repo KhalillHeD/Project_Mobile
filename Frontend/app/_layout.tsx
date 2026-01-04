@@ -56,6 +56,19 @@ export default function RootLayout() {
         <Tabs.Screen name="chat" options={{ href: null }} />
         <Tabs.Screen name="my-jobs" options={{ href: null }} />
         <Tabs.Screen name="+not-found" options={{ href: null }} />
+        <Tabs.Screen
+           name="add-job"
+           options={{ href: null }}
+         />
+      <Tabs.Screen
+        name="recruiter-jobs"
+        options={{
+          href: null,           // hides tab
+          title: "recruiter-jobs",
+      }}
+      />
+
+        
       </Tabs>
     </AppProvider>
   );
