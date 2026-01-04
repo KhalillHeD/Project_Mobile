@@ -61,7 +61,6 @@ const handleSignup = async () => {
       position_title: position.trim(),
     });
 
-    // 2) login (SimpleJWT returns { access, refresh }) [web:542]
     const login = await loginUser({ username: username.trim(), password });
 
     const access = login?.access as string | undefined;
