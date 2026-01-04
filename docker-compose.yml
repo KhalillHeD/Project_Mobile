@@ -1,15 +1,5 @@
 services:
-  web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend:/app/backend
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      - db
+  # 1. PostgreSQL Database
   db:
     image: postgres:16
     environment:
@@ -18,6 +8,34 @@ services:
       POSTGRES_PASSWORD: mypassword
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+
+  # 2. Django Backend
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile # Ensure this is the backend Dockerfile
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app/backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  # 3. Expo Frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Anonymous volume to protect container node_modules from host
+    environment:
+      - EXPO_NO_TELEMETRY=1
+    stdin_open: true # Equivalent to -i
+    tty: true        # Equivalent to -t
 
 volumes:
   postgres_data:
