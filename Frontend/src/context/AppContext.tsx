@@ -117,7 +117,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setRoleState(null);
         setUserState(null);
       } finally {
-        if (mounted) setIsReady(true);
+        if (mounted) {
+  setTimeout(() => setIsReady(true), 5000);
+}
+
       }
     };
 
