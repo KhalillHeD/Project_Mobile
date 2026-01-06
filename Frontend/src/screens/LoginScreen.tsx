@@ -22,7 +22,7 @@ import { Colors } from "../theme/colors";
 import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
 
-export const LoginScreen = () => {
+const LoginScreen = () => {
   const router = useRouter();
 
   const { role: intendedRole, setRole, setUser, setAccessToken, setRefreshToken } =
@@ -37,6 +37,11 @@ export const LoginScreen = () => {
     () => (intendedRole === "recruiter" ? "Recruiter Login" : "Jobseeker Login"),
     [intendedRole]
   );
+
+  const goToRoleSelection = async () => {
+    await setRole(null);
+    router.replace("/"); // RoleSelectionScreen (index route)
+  };
 
   const handleLogin = async () => {
     setLoading(true);
@@ -72,7 +77,7 @@ export const LoginScreen = () => {
 
       await setUser({
         id: String(me.id ?? ""),
-        name: me.name ?? "", // ✅ correct
+        name: me.name ?? "",
         email: me.email ?? "",
         role: backendRole,
         avatar: me.avatar ?? null,
@@ -164,11 +169,17 @@ export const LoginScreen = () => {
 
                 <PrimaryButton title="Continue with Google" onPress={() => {}} variant="outline" />
 
-                <TouchableOpacity onPress={handleSignup} style={styles.signupPrompt} activeOpacity={0.8}>
+                <TouchableOpacity
+                  onPress={handleSignup}
+                  style={styles.signupPrompt}
+                  activeOpacity={0.8}
+                >
                   <Text style={styles.signupText}>
                     Don&apos;t have an account? <Text style={styles.signupLink}>Sign up</Text>
                   </Text>
                 </TouchableOpacity>
+
+                <PrimaryButton title="Back to home" onPress={goToRoleSelection} variant="outline" />
               </View>
             </View>
 
@@ -179,6 +190,8 @@ export const LoginScreen = () => {
     </AuroraBackground>
   );
 };
+
+export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

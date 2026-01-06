@@ -12,30 +12,32 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import  AuroraBackground  from "../components/AuroraBackground";
+import AuroraBackground from "../components/AuroraBackground";
 import PrimaryButton from "../components/PrimaryButton";
 import TextInputField from "../components/TextInputField";
 
 import { useAppContext } from "../context/AppContext";
 import { registerUser, loginUser, fetchMe } from "../api/auth";
 
-import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
 import { Colors } from "../theme/colors";
-console.log("AuroraBackground:", AuroraBackground);
-console.log("PrimaryButton:", PrimaryButton);
-console.log("TextInputField:", TextInputField);
-
 
 const SignupScreen = () => {
   const router = useRouter();
-  const { role: intendedRole, setRole, setUser, setAccessToken, setRefreshToken } = useAppContext();
+  const {
+    role: intendedRole,
+    setRole,
+    setUser,
+    setAccessToken,
+    setRefreshToken,
+  } = useAppContext();
+
   // Core fields
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Recruiter extras (keep if your backend expects them; if not, they are harmless)
+  // Recruiter extras
   const [company, setCompany] = useState("");
   const [position, setPosition] = useState("");
 
@@ -46,81 +48,85 @@ const SignupScreen = () => {
     () => (intendedRole === "recruiter" ? "Recruiter Signup" : "Jobseeker Signup"),
     [intendedRole]
   );
-  
-const handleSignup = async () => {
-  setLoading(true);
-  setError(null);
 
-  try {
-    await registerUser({
-      username: username.trim(),
-      email: email.trim(),
-      password,
-      role: intendedRole || "jobseeker",
-      company_name: company.trim(),
-      position_title: position.trim(),
-    });
+  const goToRoleSelection = async () => {
+    // Optional but useful so user must re-pick the role
+    await setRole(null as any);
+    router.replace("/"); // index route -> RoleSelectionScreen
+  };
 
-    const login = await loginUser({ username: username.trim(), password });
+  const handleSignup = async () => {
+    setLoading(true);
+    setError(null);
 
-    const access = login?.access as string | undefined;
-    const refresh = login?.refresh as string | undefined;
+    try {
+      await registerUser({
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        role: intendedRole || "jobseeker",
+        company_name: company.trim(),
+        position_title: position.trim(),
+      });
 
-    if (!access || !refresh) {
-      setError("Signup succeeded but login failed (missing tokens). Please try logging in.");
-      return;
+      const login = await loginUser({ username: username.trim(), password });
+
+      const access = login?.access as string | undefined;
+      const refresh = login?.refresh as string | undefined;
+
+      if (!access || !refresh) {
+        setError(
+          "Signup succeeded but login failed (missing tokens). Please try logging in."
+        );
+        return;
+      }
+
+      await setAccessToken(access);
+      await setRefreshToken(refresh);
+
+      const me = await fetchMe(access);
+      const backendRole = me?.role;
+
+      if (!backendRole) {
+        setError("Signup/login worked but role missing from profile.");
+        return;
+      }
+
+      // enforce role selected
+      if (intendedRole && backendRole !== intendedRole) {
+        await setAccessToken(null);
+        await setRefreshToken(null);
+        setError(`This account is a ${backendRole}, but you selected ${intendedRole}.`);
+        return;
+      }
+
+      await setRole(backendRole);
+
+      await setUser({
+        id: String(me.id ?? ""),
+        name: me.name ?? "",
+        email: me.email ?? "",
+        role: backendRole,
+        avatar: me.avatar ?? null,
+
+        company: me.company_name ?? "",
+        bio: me.bio ?? "",
+        skills: me.skills ?? "",
+        yearsOfExperience: me.experience_years ?? 0,
+      } as any);
+
+      router.replace("/matches");
+    } catch (e: any) {
+      console.log("Signup error:", e);
+      const msg =
+        e?.data?.detail ||
+        (typeof e?.data === "string" ? e.data : null) ||
+        "Signup failed. Please check your inputs.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    await setAccessToken(access);
-    await setRefreshToken(refresh);
-
-    // 3) fetch profile
-    const me = await fetchMe(access);
-    const backendRole = me?.role;
-
-    if (!backendRole) {
-      setError("Signup/login worked but role missing from profile.");
-      return;
-    }
-
-    // enforce role selected
-    if (intendedRole && backendRole !== intendedRole) {
-      await setAccessToken(null);
-      await setRefreshToken(null);
-      setError(`This account is a ${backendRole}, but you selected ${intendedRole}.`);
-      return;
-    }
-
-    await setRole(backendRole);
-
-    // MeSerializer returns { id, name, email, role, ... }
-    await setUser({
-      id: String(me.id ?? ""),
-      name: me.name ?? "",                 // ✅ use me.name (not me.username)
-      email: me.email ?? "",
-      role: backendRole,
-      avatar: me.avatar ?? null,
-
-      company: me.company_name ?? "",
-      bio: me.bio ?? "",
-      skills: me.skills ?? "",
-      yearsOfExperience: me.experience_years ?? 0,  // ✅ backend is experience_years
-    } as any);
-
-    router.replace("/matches");
-  } catch (e: any) {
-    console.log("Signup error:", e);
-    // your apiRequest throws {status, data}
-    const msg =
-      e?.data?.detail ||
-      (typeof e?.data === "string" ? e.data : null) ||
-      "Signup failed. Please check your inputs.";
-    setError(msg);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <AuroraBackground>
@@ -134,14 +140,14 @@ const handleSignup = async () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Header (same tone as login) */}
+            {/* Header */}
             <View style={styles.header}>
               <Text style={styles.brand}>JobSwipe</Text>
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.subtitle}>Create your account to get started</Text>
             </View>
 
-            {/* Solid dark card (NOT transparent) */}
+            {/* Card */}
             <View style={styles.card}>
               {error && (
                 <View style={styles.errorBox}>
@@ -227,6 +233,13 @@ const handleSignup = async () => {
                     <Text style={styles.bottomTextStrong}>Log in</Text>
                   </Text>
                 </TouchableOpacity>
+
+                {/* ✅ NEW: Back to home / role selection */}
+                <PrimaryButton
+                  title="Back to home"
+                  onPress={goToRoleSelection}
+                  variant="outline"
+                />
               </View>
             </View>
 
@@ -272,7 +285,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Key change: solid dark card
   card: {
     backgroundColor: "#1C1F2E",
     borderRadius: Radius.xl,
@@ -291,7 +303,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 10,
   },
-  errorText: { color: "#991B1B", fontSize: 13, fontWeight: "700", lineHeight: 18 },
+  errorText: {
+    color: "#991B1B",
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
 
   loadingRow: {
     flexDirection: "row",
