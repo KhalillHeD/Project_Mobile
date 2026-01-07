@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.log
 *.sqlite3
-.env
+
 venv/
 postgres_data/
 
