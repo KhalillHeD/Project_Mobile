@@ -86,23 +86,24 @@ export const ProfileScreen = () => {
     setIsEditing(false);
   };
 
+
+
   const handleSaveProfile = async () => {
     if (!user || !editedUser) return;
 
     setSaving(true);
     setErrorText(null);
 
-    // IMPORTANT: do not send `avatar` as URL string; backend avatar is ImageField (file upload)
-    const payload: Partial<AppUser> = {
+    // Prepare payload for API call
+    const payload = {
       name: editedUser.name,
       email: editedUser.email,
-
-      skills: editedUser.skills ?? "",
-      bio: editedUser.bio ?? "",
-      experience_years: editedUser.experience_years ?? null,
-
-      company_name: editedUser.company_name ?? "",
-      position_title: editedUser.position_title ?? "",
+      avatar: editedUser.avatar || null,
+      skills: editedUser.skills || "",
+      bio: editedUser.bio || "",
+      experience_years: editedUser.experience_years,
+      company_name: editedUser.company_name || "",
+      position_title: editedUser.position_title || "",
     };
 
     try {
@@ -278,15 +279,14 @@ export const ProfileScreen = () => {
                         placeholder="you@example.com"
                       />
 
-                      {/* Keep this input if you want, but it won't persist to ImageField backend */}
                       <TextInputField
-                        label="Avatar URL (not saved yet)"
+                        label="Avatar URL"
                         value={editedUser?.avatar ?? ""}
                         onChangeText={(text) => {
                           const base = editedUser ?? user;
                           setEditedUser({ ...base, avatar: text });
                         }}
-                        placeholder="https://..."
+                        placeholder="https://example.com/avatar.jpg"
                       />
 
                       {role === "jobseeker" ? (

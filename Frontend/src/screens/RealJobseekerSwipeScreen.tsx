@@ -12,13 +12,13 @@ import {
 } from "react-native";
 import { X, Heart } from "lucide-react-native";
 
-import JobOfferCard from "../components/JobOfferCard";
+import JobOfferCard, { Job } from "../components/JobOfferCard";
 import { useAppContext } from "../context/AppContext";
 import { Colors } from "../theme/colors";
 import { Spacing } from "../theme/spacing";
 import { Radius } from "../theme/radius";
 import { Shadow } from "../theme/shadow";
-import { Job, fetchJobsForSeeker, likeOrDislikeJob } from "../jsr/jobs";
+import { fetchJobsForSeeker, likeOrDislikeJob } from "../jsr/jobs";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -42,27 +42,52 @@ export default function RealJobseekerSwipeScreen() {
   const currentJob = availableJobs[currentIndex];
   const nextJob = availableJobs[currentIndex + 1];
 
+  // Entrance animation for cards
+  const cardEntranceAnim = useRef(new Animated.Value(0)).current;
+  const nextCardEntranceAnim = useRef(new Animated.Value(0)).current;
+
+  // Button press animations
+  const nopeScale = useRef(new Animated.Value(1)).current;
+  const likeScale = useRef(new Animated.Value(1)).current;
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = (await fetchJobsForSeeker(accessToken)) as Job[];
+      setJobs(data);
+    } catch (e: any) {
+      const msg =
+        e?.data?.detail ||
+        (typeof e?.data === "string" ? e.data : JSON.stringify(e?.data)) ||
+        e?.message ||
+        "Failed to load jobs.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentJob) {
+      Animated.timing(cardEntranceAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+    }
+    if (nextJob) {
+      Animated.timing(nextCardEntranceAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: 100,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [currentJob, nextJob, cardEntranceAnim, nextCardEntranceAnim]);
+
   useEffect(() => {
     if (role !== "jobseeker" || !accessToken) return;
-
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = (await fetchJobsForSeeker(accessToken)) as Job[];
-        setJobs(data);
-      } catch (e: any) {
-        const msg =
-          e?.data?.detail ||
-          (typeof e?.data === "string" ? e.data : JSON.stringify(e?.data)) ||
-          e?.message ||
-          "Failed to load jobs.";
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     load();
   }, [role, accessToken]);
 
@@ -163,49 +188,75 @@ export default function RealJobseekerSwipeScreen() {
     }).start(() => handleSwipeComplete(direction));
   };
 
+  const handleNopePressIn = () => {
+    Animated.spring(nopeScale, { toValue: 0.95, useNativeDriver: true }).start();
+  };
+
+  const handleNopePressOut = () => {
+    Animated.spring(nopeScale, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  const handleLikePressIn = () => {
+    Animated.spring(likeScale, { toValue: 0.95, useNativeDriver: true }).start();
+  };
+
+  const handleLikePressOut = () => {
+    Animated.spring(likeScale, { toValue: 1, useNativeDriver: true }).start();
+  };
+
   if (role !== "jobseeker") {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.center}>
-          <Text style={styles.error}>Only jobseekers can see this screen.</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Discover</Text>
+          <Text style={styles.subtitle}>0 opportunities</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.center}>
-          <Text style={styles.error}>{error}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!currentJob) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>You’re all caught up</Text>
-          <Text style={styles.emptySubtitle}>New jobs will appear soon.</Text>
+        <View style={styles.deck}>
+          <View style={styles.center}>
+            <Text style={styles.error}>Only jobseekers can see this screen.</Text>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
   const cardStyle = {
-    transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
+    transform: [
+      { translateX: position.x },
+      { translateY: position.y },
+      { rotate },
+      {
+        scale: cardEntranceAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.8, 1],
+        }),
+      },
+      {
+        translateY: cardEntranceAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [50, 0],
+        }),
+      },
+    ],
+  };
+
+  const nextCardStyle = {
+    transform: [
+      { scale: nextScale },
+      { translateY: nextTranslateY },
+      {
+        scale: nextCardEntranceAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.7, 1],
+        }),
+      },
+      {
+        translateY: nextCardEntranceAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [100, 0],
+        }),
+      },
+    ],
   };
 
   return (
@@ -218,60 +269,106 @@ export default function RealJobseekerSwipeScreen() {
       </View>
 
       <View style={styles.deck}>
-        {nextJob && (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.nextCardWrap,
-              {
-                opacity: nextOpacity,
-                transform: [{ scale: nextScale }, { translateY: nextTranslateY }],
-              },
-            ]}
-          >
-            <JobOfferCard job={nextJob} />
-          </Animated.View>
+        {loading && (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+          </View>
         )}
 
-        <Animated.View style={[styles.cardWrap, cardStyle]} {...panResponder.panHandlers}>
-          <Animated.View pointerEvents="none" style={[styles.glow, styles.glowGreen, { opacity: glowGreen }]} />
-          <Animated.View pointerEvents="none" style={[styles.glow, styles.glowRed, { opacity: glowRed }]} />
+        {error && !loading && (
+          <View style={styles.center}>
+            <Text style={styles.error}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={load}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          <Animated.View style={[styles.likeBadge, { opacity: likeOpacity }]}>
-            <Text style={styles.likeText}>LIKE</Text>
-          </Animated.View>
-          <Animated.View style={[styles.nopeBadge, { opacity: nopeOpacity }]}>
-            <Text style={styles.nopeText}>SKIP</Text>
-          </Animated.View>
+        {!currentJob && !loading && !error && (
+          <View style={styles.center}>
+            <Text style={styles.emptyTitle}>You’re all caught up</Text>
+            <Text style={styles.emptySubtitle}>New jobs will appear soon.</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={load}>
+              <Text style={styles.retryText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          <JobOfferCard job={currentJob} />
-        </Animated.View>
+        {currentJob && !loading && !error && (
+          <>
+            {nextJob && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.nextCardWrap,
+                  {
+                    opacity: nextOpacity,
+                    transform: nextCardStyle.transform,
+                  },
+                ]}
+              >
+                <JobOfferCard job={nextJob} />
+              </Animated.View>
+            )}
+
+            <Animated.View style={[styles.cardWrap, cardStyle]} {...panResponder.panHandlers}>
+              <Animated.View pointerEvents="none" style={[styles.glow, styles.glowGreen, { opacity: glowGreen }]} />
+              <Animated.View pointerEvents="none" style={[styles.glow, styles.glowRed, { opacity: glowRed }]} />
+
+              <Animated.View style={[styles.likeBadge, { opacity: likeOpacity }]}>
+                <Text style={styles.likeText}>LIKE</Text>
+              </Animated.View>
+              <Animated.View style={[styles.nopeBadge, { opacity: nopeOpacity }]}>
+                <Text style={styles.nopeText}>SKIP</Text>
+              </Animated.View>
+
+              <JobOfferCard job={currentJob} />
+            </Animated.View>
+          </>
+        )}
       </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.nopeBtn]}
-          onPress={() => handleButtonPress("left")}
-          activeOpacity={0.85}
-        >
-          <X size={28} color={Colors.danger} strokeWidth={2.5} />
-        </TouchableOpacity>
+      {currentJob && !loading && !error && (
+        <View style={styles.actions}>
+          <Animated.View style={{ transform: [{ scale: nopeScale }] }}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.nopeBtn]}
+              onPress={() => handleButtonPress("left")}
+              onPressIn={handleNopePressIn}
+              onPressOut={handleNopePressOut}
+              activeOpacity={0.85}
+            >
+              <X size={28} color={Colors.danger} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </Animated.View>
 
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.likeBtn]}
-          onPress={() => handleButtonPress("right")}
-          activeOpacity={0.85}
-        >
-          <Heart size={28} color={Colors.success} strokeWidth={2.5} />
-        </TouchableOpacity>
-      </View>
+          <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.likeBtn]}
+              onPress={() => handleButtonPress("right")}
+              onPressIn={handleLikePressIn}
+              onPressOut={handleLikePressOut}
+              activeOpacity={0.85}
+            >
+              <Heart size={28} color={Colors.success} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
-  header: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
+  header: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.2)",
+  },
   title: { fontSize: 34, fontWeight: "900", color: Colors.text, letterSpacing: -0.6 },
   subtitle: { marginTop: 4, fontSize: 14, fontWeight: "600", color: Colors.textMuted },
   deck: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -337,4 +434,13 @@ const styles = StyleSheet.create({
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 },
   emptyTitle: { fontSize: 26, fontWeight: "900", color: Colors.text, marginBottom: 10 },
   emptySubtitle: { fontSize: 15, fontWeight: "600", color: Colors.textMuted, textAlign: "center" },
+  retryBtn: {
+    marginTop: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    ...Shadow,
+  },
+  retryText: { color: Colors.surface, fontSize: 16, fontWeight: "700" },
 });
