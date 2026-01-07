@@ -1,117 +1,74 @@
-Table of Contents
-About
-Tech stack
-Prerequisites
-Quick start (Docker)
-Common Docker commands
-Common tasks (inside containers)
-Frontend (Expo)
-Local (non-Docker) dev notes
-Environment & .env.example
-Database & migrations
-Testing
-Building / Release (EAS)
-Troubleshooting
-Contributing
-License & Contact
-About
-Project Mobile pairs a Django REST API (backend) with an Expo-managed React Native app (frontend). The repository is set up to run using Docker Compose for easy local development.
+# 📱 Project Mobile
 
-Tech stack
-Backend: Python, Django, Django REST Framework
-Frontend: Expo, React Native (TypeScript)
-Database: PostgreSQL (Docker)
-Containerization: Docker, Docker Compose
-Prerequisites
-Docker & Docker Compose installed (https://docs.docker.com)
-Node.js & npm/yarn (for local frontend work)
-(Optional) Python 3.10+ & virtualenv if running backend locally
-Quick start (Docker) ✅
-Copy a working env file (see .env.example) and customize if needed.
+Project Mobile is a full-stack mobile application combining a **Django REST API** backend with an **Expo (React Native)** frontend.  
+The project is fully **Dockerized** using Docker Compose for fast and consistent local development.
 
-From the project root run:
-docker-compose up --build
+---
 
-Or to run in background:
-docker-compose up -d --build
+## 📚 Table of Contents
 
-Services:
+- [About](#about)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Common Docker Commands](#common-docker-commands)
+- [Common Tasks (Inside Containers)](#common-tasks-inside-containers)
+- [Frontend (Expo)](#frontend-expo)
+- [Local (Non-Docker) Development](#local-non-docker-development)
+- [Environment Variables](#environment--envexample)
+- [Database & Migrations](#database--migrations)
+- [Testing](#testing)
+- [Building & Release (EAS)](#building--release-eas)
+- [Troubleshooting](#troubleshooting--tips)
+- [Contributing](#contributing)
+- [License & Contact](#license--contact)
 
-Django API: http://localhost:8000
-Expo dev server: http://localhost:8081 (or use Expo app / tunnel)
-Common Docker commands 🔧
-docker-compose down
+---
 
-docker-compose down -v # WARNING: removes volumes (DB data)
+## 📖 About
 
-docker-compose logs -f web
+Project Mobile pairs:
+- a **Django REST Framework API** for backend services
+- an **Expo-managed React Native app** for mobile clients
 
-docker-compose up --build --force-recreate
+The repository is configured to run entirely with **Docker Compose**, making onboarding and local development simple and consistent across environments.
 
-Common tasks (run inside containers) ✅
-docker-compose exec web python manage.py migrate
+---
 
-docker-compose exec web python manage.py makemigrations
+## 🛠 Tech Stack
 
-docker-compose exec web python manage.py createsuperuser
+**Backend**
+- Python
+- Django
+- Django REST Framework
 
-docker-compose exec web python manage.py shell
+**Frontend**
+- Expo
+- React Native (TypeScript)
 
-docker-compose exec web python manage.py test
+**Database**
+- PostgreSQL (Dockerized)
 
-docker-compose exec db psql -U myuser -d mydb
+**DevOps**
+- Docker
+- Docker Compose
+- Expo EAS (build & release)
 
-Frontend (Expo) 📱
-Start the dev server inside the frontend container:
-docker-compose exec frontend npx expo start
+---
 
-Start with tunnel so mobile devices can connect:
-docker-compose exec frontend npx expo start --tunnel
+## ✅ Prerequisites
 
-Install JS deps inside container:
-docker-compose exec frontend npm install
+Make sure you have the following installed:
 
-Local (non-Docker) development notes
-Backend:
+- **Docker & Docker Compose**  
+  https://docs.docker.com
+- **Node.js** + npm or yarn (for local frontend work)
+- *(Optional)* **Python 3.10+** and `virtualenv` for running the backend without Docker
 
-python -m venv venv
-venv\Scripts\activate
-pip install -r backend/requirements.txt
-cd backend
-python manage.py migrate
-python manage.py runserver
-Frontend:
+---
 
-cd Frontend
-npm install
-npx expo start
-Environment & .env.example 🔒
-docker-compose.yml references an .env file. Do not commit secrets.
-Typical variables:
-POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-DJANGO_SECRET_KEY, DEBUG, DATABASE_URL
-Optional .env.example (copy into .env and edit):
+## 🚀 Quick Start (Docker)
 
-Database & migrations ✅
-Default DB for Docker is PostgreSQL (service db). Data persisted in postgres_data volume.
-To create and apply migrations:
-docker-compose exec web python manage.py makemigrations
-docker-compose exec web python manage.py migrate
-Testing 🧪
-Run backend tests:
-docker-compose exec web python manage.py test
-Building / Release (EAS) 📦
-Expo EAS builds require EAS configuration and credentials:
-eas build -p android
-Configure eas.json and sign in to EAS before running builds.
-Troubleshooting & tips ⚠️
-If ports conflict, ensure 8000 (Django) and 8081 (Expo) are free.
-If DB connection issues occur, verify POSTGRES_* env vars and that db service is healthy.
-If code changes don't reflect, verify that volume mounts are present in docker-compose.yml.
-To clear containers and volumes (use carefully):
-docker-compose down -v
-Tip: Inspect docker-compose.yml and settings.py for project-specific settings and env var usage.
-
-Contributing ✨
-Fork, create feature branches, add tests, and open PRs.
-Run backend tests locally or via the container before opening PRs.
+1. Copy the environment file:
+   ```bash
+   cp .env.example .env
