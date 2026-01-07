@@ -72,3 +72,20 @@ Make sure you have the following installed:
 1. Copy the environment file:
    ```bash
    cp .env.example .env
+
+Start the project:
+   ```bash
+   docker-compose up --build```
+
+
+Or run in the background:
+
+docker-compose up -d --build
+
+🌐 Services
+
+Django API → http://localhost:8000
+
+Expo Dev Server → http://localhost:8081
+
+Use the Expo Go app or tunnel to test on real devices.
