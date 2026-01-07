@@ -45,11 +45,55 @@ export async function updateMe(
     experience_years?: number | null;
     company_name?: string;
     position_title?: string;
+    avatar?: string | null; // URI for file upload
   }
 ) {
-  return apiRequest(
-    "/api/auth/me/",
-    { method: "PATCH", body: JSON.stringify(payload) },
-    accessToken
-  );
+  // Check if we have a file to upload
+  if (payload.avatar && payload.avatar.startsWith('file://')) {
+    // Handle file upload with FormData
+    const formData = new FormData();
+
+    // Add text fields
+    if (payload.name !== undefined) formData.append('name', payload.name);
+    if (payload.email !== undefined) formData.append('email', payload.email);
+    if (payload.skills !== undefined) formData.append('skills', payload.skills);
+    if (payload.bio !== undefined) formData.append('bio', payload.bio);
+    if (payload.experience_years !== undefined) formData.append('experience_years', payload.experience_years?.toString() || '');
+    if (payload.company_name !== undefined) formData.append('company_name', payload.company_name);
+    if (payload.position_title !== undefined) formData.append('position_title', payload.position_title);
+
+    // Add avatar file
+    const filename = payload.avatar.split('/').pop() || 'avatar.jpg';
+    const fileType = filename.split('.').pop()?.toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
+
+    formData.append('avatar', {
+      uri: payload.avatar,
+      name: filename,
+      type: fileType,
+    } as any);
+
+    return apiRequest(
+      "/api/auth/me/",
+      {
+        method: "PATCH",
+        body: formData,
+        headers: {
+          // Don't set Content-Type for FormData, let the browser set it with boundary
+        }
+      },
+      accessToken
+    );
+  } else {
+    // Handle regular JSON update (including avatar URL removal)
+    const jsonPayload = { ...payload };
+    if (payload.avatar !== undefined) {
+      jsonPayload.avatar = payload.avatar; // null or URL string
+    }
+
+    return apiRequest(
+      "/api/auth/me/",
+      { method: "PATCH", body: JSON.stringify(jsonPayload) },
+      accessToken
+    );
+  }
 }
